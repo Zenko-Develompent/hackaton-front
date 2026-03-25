@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Nunito, Nunito_Sans } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const nunitoSans = Nunito_Sans({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,8 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full antialiased", "font-sans", inter.variable)}>
-      <body className="min-h-full flex flex-col justify-center items-center">{children}</body>
+    <html
+      lang="en"
+      className={cn("h-full antialiased", "font-sans", nunitoSans.variable)}
+    >
+      <body suppressHydrationWarning>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

@@ -1,9 +1,5 @@
-import Icon from "@/shared/assets/icons/ArrowClockwise.svg";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
-  return (
-    <div>
-      <Icon />
-    </div>
-  );
+  return <Button variant="outline" size="lg">Hello World</Button>;
 }
