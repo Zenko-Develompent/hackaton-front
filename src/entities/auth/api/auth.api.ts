@@ -1,4 +1,5 @@
 // entities/auth/api/auth.api.ts
+
 import { api } from "@/shared/api/client";
 import type {
   LoginRequest,
@@ -7,31 +8,41 @@ import type {
   RegisterResponse,
   RefreshResponse,
   LogoutResponse,
+  UserProfile,
 } from "../model/types";
 
 export const authApi = {
-  // Регистрация - показываем уведомления
-  register: (data: RegisterRequest) =>
-    api().post<RegisterResponse>("/auth/register", data, ),
-
-  // Логин - уведомления будут показаны в AuthProvider, но можно добавить и здесь
+  // Логин
   login: (data: LoginRequest) =>
-    api().post<LoginResponse>("/auth/login", data, ),
-      
+    api().post<LoginResponse>("/auth/login", data, {
+      auth: false,
+    }),
 
-  // Обновление токена - скрываем уведомления, чтобы не беспокоить пользователя
+  // Регистрация - теперь возвращает токены
+  register: (data: RegisterRequest) =>
+    api().post<RegisterResponse>("/auth/register", data, {
+      auth: false,
+    }),
+
+  // Получение профиля пользователя (требуется токен)
+  getProfile: () =>
+    api().get<UserProfile>("/auth/profile", {
+      auth: true,
+    }),
+
+  // Обновление токена
   refresh: () =>
     api().post<RefreshResponse>("/auth/refresh", undefined, {
       auth: true,
     }),
 
-  // Выход - уведомления покажет AuthProvider
+  // Выход
   logout: (refreshToken?: string) =>
     api().post<LogoutResponse>(
       "/auth/logout",
       { refreshToken },
       {
-        auth: true
-      },
+        auth: true,
+      }
     ),
 };

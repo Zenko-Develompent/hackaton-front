@@ -1,49 +1,59 @@
-export interface UserShort {
+// entities/auth/model/types.ts
+
+export type User = {
   id: string;
   username: string;
-  email?: string;
-}
+  birthDate?: string;
+  age?: number;
+  role: 'student' | 'parent' | 'admin';
+  xp?: number;
+  level?: number;
+};
 
-export interface LoginRequest {
-  id?: string;
-  email?: string;
-  username?: string;
-  password: string;
-}
+export type UserProfile = {
+  username: string;
+  level: number;
+  achievements: Achievement[];
+};
 
-export interface AuthTokens {
+export type Achievement = {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  earnedAt?: string;
+};
+
+export type AuthTokens = {
   accessToken: string;
   accessExpiresAt: string;
   refreshToken: string;
   refreshExpiresAt: string;
-}
+};
 
-export interface LoginResponse extends AuthTokens {
-  deviceId: string;
-  sessionId: string;
-  sessionKey: string;
-  sessionKeyIv: string;
-  user: UserShort;
-}
-
-export interface RegisterRequest {
+export type LoginRequest = {
   username: string;
   password: string;
-  email: string;
-}
+};
 
-export interface RegisterResponse {
-  needVerify: boolean;
-  ticket: string;
-  email: string;
-  resendAfterSec: number;
-}
+export type LoginResponse = AuthTokens & {
+  user: User;
+};
 
-export interface RefreshResponse extends AuthTokens {
-  sessionId?: string;
-  deviceId?: string;
-}
+export type RegisterRequest = {
+  username: string;
+  password: string;
+  age: string;
+  role: 'student' | 'parent';
+};
 
-export interface LogoutResponse {
+// Обновляем тип ответа регистрации - теперь он такой же как LoginResponse
+export type RegisterResponse = AuthTokens & {
+  user: User;
+};
+
+export type RefreshResponse = AuthTokens;
+
+export type LogoutResponse = {
   ok: boolean;
-}
+};

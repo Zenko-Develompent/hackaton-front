@@ -16,7 +16,7 @@ export const Header = () => {
 
   return (
     <header className="fixed w-full max-w-300 h-16 flex items-center justify-between top-0 left-1/2 -translate-x-1/2 px-5   z-1000 bg-white/92 backdrop-blur-sm">
-      <a href="/">
+      <a href="/" >
         <img src="/Logo.svg" alt="" />
       </a>
 

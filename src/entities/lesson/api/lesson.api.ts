@@ -1,8 +1,10 @@
+// entities/lesson/api/lesson.api.ts
 import { api } from "@/shared/api/client";
 import type {
   Lesson,
   LessonQuiz,
   LessonTask,
+  LessonProgress,
 } from "../model/types";
 
 export const lessonApi = {
@@ -14,4 +16,9 @@ export const lessonApi = {
 
   getTask: (lessonId: string) =>
     api().get<LessonTask>(`/lessons/${lessonId}/task`),
+
+  getProgress: (lessonId: string) =>
+    api().get<LessonProgress>(`/lessons/${lessonId}/progress`, {
+      auth: true,
+    }),
 };

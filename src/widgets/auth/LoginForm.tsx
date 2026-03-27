@@ -17,14 +17,14 @@ export const LoginForm = () => {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [identifier, setIdentifier] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // 👈 добавил preventDefault
+    e.preventDefault();
 
-    if (!identifier.trim() || !password.trim()) {
+    if (!username.trim() || !password.trim()) {
       showAlert({
         variant: "destructive",
         title: "Ошибка",
@@ -37,15 +37,15 @@ export const LoginForm = () => {
     setLoading(true);
 
     try {
-      const data = await authApi.login({
-        email: identifier.includes("@") ? identifier : undefined,
-        username: !identifier.includes("@") ? identifier : undefined,
+      const response = await authApi.login({
+        username: username.trim(),
         password,
       });
 
+      // Используем login из AuthProvider, который принимает токены
       await login({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
       });
 
       router.push("/profile");
@@ -53,7 +53,7 @@ export const LoginForm = () => {
       showAlert({
         variant: "destructive",
         title: "Ошибка входа",
-        description: "Неверный email/username или пароль",
+        description: "Неверное имя пользователя или пароль",
         autoClose: 5000,
       });
     } finally {
@@ -63,35 +63,38 @@ export const LoginForm = () => {
 
   return (
     <ParallaxBackground imageUrl="/bg.png">
-      <div className="h-screen flex flex-col justify-center items-center text-[16px] ">
+      <div className="h-screen flex flex-col justify-center items-center text-[16px]">
         <form
           onSubmit={handleSubmit}
-          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4"
+          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4 bg-white"
         >
           <h1 className="font-semibold text-[28px]">С возвращением!</h1>
-          <p>Войдите, чтобы продолжить</p>
+          <p className="text-gray-600">Войдите, чтобы продолжить</p>
+          
           <Field>
-            <FieldLabel>Логин/Пароль</FieldLabel>
+            <FieldLabel>Имя пользователя</FieldLabel>
             <Input
-              required={true}
-              placeholder="Email или username"
-              value={identifier}
-              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="Введите имя пользователя"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
+              required
             />
           </Field>
+          
           <Field>
             <FieldLabel>Пароль</FieldLabel>
             <Input
               type="password"
-              placeholder="Пароль"
+              placeholder="Введите пароль"
               value={password}
-              required={true}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
+              required
             />
           </Field>
-          <a href="/" className="font-medium hover:underline w-fit">
+          
+          <a href="/forgot-password" className="font-medium hover:underline w-fit text-sm text-gray-500">
             Забыли пароль?
           </a>
 
@@ -104,9 +107,10 @@ export const LoginForm = () => {
             {loading ? "Загрузка..." : "Войти"}
           </Button>
         </form>
+        
         <a
           href="/register"
-          className="font-medium text-black/60 text-center mt-3"
+          className="font-medium text-black/60 text-center mt-3 hover:text-black"
         >
           Еще нет аккаунта?{" "}
           <span className="text-black hover:underline">Регистрация</span>

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { authApi } from "@/entities/auth/api/auth.api";
 import { useAuth } from "@/features/auth/useAuth";
 
 import { Input } from "@/components/ui/input";
@@ -12,157 +11,188 @@ import {
   ButtonGroup,
   ButtonGroupSeparator,
 } from "@/components/ui/button-group";
-import { cn } from "@/lib/utils";
 import { ParallaxBackground } from "../ParallaxBackground/ParallaxBackground";
+import { useAlert } from "@/features/alert/alert-store";
 
 export const RegisterForm = () => {
   const router = useRouter();
-  const { login } = useAuth();
+  const showAlert = useAlert();
+  const { register } = useAuth();
 
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [age, setAge] = useState("");
+  const [userType, setUserType] = useState<"student" | "parent" | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [resendTimer, setResendTimer] = useState(0);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
     // Валидация
     if (!username.trim()) {
-      setError("Введите username");
-      return;
-    }
-
-    if (!email.trim()) {
-      setError("Введите email");
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Введите имя пользователя",
+        autoClose: 3000,
+      });
       return;
     }
 
     if (!password) {
-      setError("Введите пароль");
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Введите пароль",
+        autoClose: 3000,
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Пароли не совпадают");
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Пароли не совпадают",
+        autoClose: 3000,
+      });
       return;
     }
 
     if (password.length < 6) {
-      setError("Пароль должен содержать минимум 6 символов");
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Пароль должен содержать минимум 6 символов",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (!age) {
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Введите возраст",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum) || ageNum <= 0 || ageNum > 120) {
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Введите корректный возраст (1-120)",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (!userType) {
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Выберите тип пользователя",
+        autoClose: 3000,
+      });
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
-      const data = await authApi.register({
+      await register({
         username: username.trim(),
-        email: email.trim(),
-        password,
+        password: password,
+        age: age,
+        role: userType,
       });
 
-      if (data.needVerify) {
-        // Требуется подтверждение email
-        setResendTimer(data.resendAfterSec);
+      showAlert({
+        variant: "success",
+        title: "Регистрация успешна!",
+        description: "Добро пожаловать в платформу",
+        autoClose: 3000,
+      });
 
-        // Запускаем таймер для повторной отправки
-        if (data.resendAfterSec > 0) {
-          let timer = data.resendAfterSec;
-          const interval = setInterval(() => {
-            timer--;
-            setResendTimer(timer);
-            if (timer <= 0) {
-              clearInterval(interval);
-            }
-          }, 1000);
-        }
-      } else {
-        // Если верификация не требуется, сразу логиним
-        // В реальном приложении здесь может быть автоматический вход
-        // или перенаправление на страницу входа
-        router.push("/login?registered=true");
-      }
+
     } catch (err: any) {
       if (err.message?.includes("username already exists")) {
-        setError("Пользователь с таким username уже существует");
-      } else if (err.message?.includes("email already exists")) {
-        setError("Пользователь с таким email уже существует");
+        showAlert({
+          variant: "destructive",
+          title: "Ошибка регистрации",
+          description: "Пользователь с таким именем уже существует",
+          autoClose: 5000,
+        });
       } else {
-        setError("Ошибка регистрации. Попробуйте позже.");
-        console.log("Registration error:", err);
+        showAlert({
+          variant: "destructive",
+          title: "Ошибка регистрации",
+          description: "Не удалось создать аккаунт. Попробуйте позже.",
+          autoClose: 5000,
+        });
       }
+      console.error("Registration error:", err);
     } finally {
       setLoading(false);
     }
   };
-
-  const handleResendVerification = async () => {
-    if (resendTimer > 0) return;
-
-    setLoading(true);
-    try {
-      // Здесь должен быть API запрос на повторную отправку письма
-      // const response = await authApi.resendVerification({ ticket: verificationTicket });
-      // setResendTimer(response.resendAfterSec);
-
-      // Заглушка:
-      setResendTimer(60);
-      let timer = 60;
-      const interval = setInterval(() => {
-        timer--;
-        setResendTimer(timer);
-        if (timer <= 0) {
-          clearInterval(interval);
-        }
-      }, 1000);
-    } catch (err) {
-      setError("Не удалось отправить письмо повторно");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [userType, setUserType] = useState<"child" | "parent" | null>(null);
 
   return (
     <ParallaxBackground imageUrl="/bg.png">
       <div className="h-screen flex flex-col justify-center items-center text-[16px]">
         <form
           onSubmit={handleSubmit}
-          action=""
-          className="border border-[#E5E5E5]  p-5 rounded-[40px] w-100 flex flex-col gap-4"
+          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4 bg-white"
         >
           <h1 className="font-semibold text-[28px]">Создайте аккаунт</h1>
-          <p>Заполните данные для регистрации</p>
+          <p className="text-gray-600">Заполните данные для регистрации</p>
+          
           <Field>
-            <FieldLabel>Логин</FieldLabel>
-            <Input required={true} placeholder="Email или username" />
+            <FieldLabel>Имя пользователя</FieldLabel>
+            <Input
+              placeholder="Введите имя пользователя"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
           </Field>
+          
           <Field>
-            <FieldLabel>Почта</FieldLabel>
-            <Input required={true} placeholder="Email или username" />
+            <FieldLabel>Возраст</FieldLabel>
+            <Input
+              type="number"
+              placeholder="Введите возраст"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              min="1"
+              max="120"
+              required
+            />
           </Field>
+          
           <Field>
             <FieldLabel>Пароль</FieldLabel>
             <Input
               type="password"
-              placeholder="Пароль"
+              placeholder="Введите пароль (минимум 6 символов)"
               value={password}
-              required={true}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </Field>
+          
           <Field>
-            <FieldLabel>Пароль</FieldLabel>
+            <FieldLabel>Подтверждение пароля</FieldLabel>
             <Input
               type="password"
               placeholder="Повторите пароль"
-              value={password}
-              required={true}
-              onChange={(e) => setPassword(e.target.value)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
             />
           </Field>
 
@@ -171,8 +201,8 @@ export const RegisterForm = () => {
               className="flex-1 text-[16px]"
               type="button"
               size="lg"
-              variant={userType === "child" ? "default" : "outline"}
-              onClick={() => setUserType("child")}
+              variant={userType === "student" ? "default" : "outline"}
+              onClick={() => setUserType("student")}
             >
               Ребенок
             </Button>
@@ -188,11 +218,20 @@ export const RegisterForm = () => {
             </Button>
           </ButtonGroup>
 
-          <Button type="submit" className="w-full" disabled={loading} size="lg">
-            {loading ? "Загрузка..." : "Войти"}
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={loading} 
+            size="lg"
+          >
+            {loading ? "Регистрация..." : "Зарегистрироваться"}
           </Button>
         </form>
-        <a href="/login" className="font-medium text-black/60 text-center mt-3">
+        
+        <a
+          href="/login"
+          className="font-medium text-black/60 text-center mt-3 hover:text-black"
+        >
           Уже есть аккаунт?{" "}
           <span className="text-black hover:underline">Войти</span>
         </a>

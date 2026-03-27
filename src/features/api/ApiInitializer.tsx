@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, createContext, useContext } from 'react';
-import { usePathname } from 'next/navigation'; // добавляем
+import { useEffect, useState, createContext, useContext, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAlert } from '@/features/alert/alert-store';
 import { initApiClient } from '@/shared/api/client';
 
@@ -13,15 +13,22 @@ export function ApiInitializer({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const showAlert = useAlert();
   const pathname = usePathname();
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
+    // Предотвращаем двойную инициализацию
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+    
     console.log('[ApiInitializer] Initializing API client...');
     
     initApiClient({
       fetchImpl: fetch,
       getAccessToken: () => {
         try {
-          return localStorage.getItem('access_token');
+          const token = localStorage.getItem('access_token');
+          console.log('[ApiInitializer] getAccessToken called, token exists:', !!token);
+          return token;
         } catch {
           return null;
         }
@@ -31,6 +38,7 @@ export function ApiInitializer({ children }: { children: React.ReactNode }) {
           const refreshToken = localStorage.getItem('refresh_token');
           if (!refreshToken) return null;
           
+          console.log('[ApiInitializer] Attempting to refresh token...');
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -41,8 +49,11 @@ export function ApiInitializer({ children }: { children: React.ReactNode }) {
           
           const data = await response.json();
           localStorage.setItem('access_token', data.accessToken);
-          localStorage.setItem('refresh_token', data.refreshToken);
+          if (data.refreshToken) {
+            localStorage.setItem('refresh_token', data.refreshToken);
+          }
           
+          console.log('[ApiInitializer] Token refreshed successfully');
           return {
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
@@ -53,13 +64,13 @@ export function ApiInitializer({ children }: { children: React.ReactNode }) {
         }
       },
       onAuthFailure: () => {
-        console.log('[ApiInitializer] Auth failure, clearing tokens');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        
+        console.log('[ApiInitializer] Auth failure detected');
+        // НЕ ОЧИЩАЕМ ТОКЕНЫ ЗДЕСЬ!
+        // Очистка токенов должна происходить только при logout или когда refresh не сработал
+        // Показываем предупреждение, но не чистим токены автоматически
         showAlert({
           variant: 'destructive',
-          title: 'Сессия истекла',
+          title: 'Ошибка авторизации',
           description: 'Пожалуйста, войдите снова',
           autoClose: 5000,
         });

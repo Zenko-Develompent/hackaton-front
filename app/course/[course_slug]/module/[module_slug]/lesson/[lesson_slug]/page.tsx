@@ -116,7 +116,7 @@ export default function LessonPage() {
         setLessonLoading(true);
 
         setTimeout(() => {
-          const lessonData = mockLessons[lessonSlug];
+          const lessonData = mockLessons[0];
           setLesson(lessonData || null);
           setLessonLoading(false);
         }, 300);

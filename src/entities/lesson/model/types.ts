@@ -1,3 +1,4 @@
+// entities/lesson/model/types.ts
 export type Lesson = {
   lessonId: string;
   moduleId: string;
@@ -23,4 +24,16 @@ export type LessonTask = {
   examId: string | null;
   name: string;
   description: string;
+  runnerLanguage?: string;
+  xpReward?: number;
+  coinReward?: number;
+};
+
+export type LessonProgress = {
+  targetId: string;
+  targetType: 'lesson';
+  percent: number;
+  completed: boolean;
+  doneItems: number;
+  totalItems: number;
 };

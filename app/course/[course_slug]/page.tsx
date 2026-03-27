@@ -36,15 +36,11 @@ export default function CoursePage() {
       try {
         setLoading(true);
         setError(null);
-        // Для реального API:
-        // const response = await courseApi.getTree(courseSlug);
-        // setCourseTree(response);
 
-        // Используем моковые данные
-        setTimeout(() => {
-          setCourseTree(mockCourseTree);
-          setLoading(false);
-        }, 500);
+        const response = await courseApi.getTree(courseSlug);
+        setCourseTree(response);
+
+        
       } catch (err) {
         console.error("Error fetching course tree:", err);
         setError("Не удалось загрузить структуру курса");
@@ -61,21 +57,14 @@ export default function CoursePage() {
       setRecommendedLoading(true);
       setRecommendedError(false);
 
-      // Для реального API:
-      // const response = await courseApi.getCourses(0, 4);
-      // const filteredCourses = response.items.filter(
-      //   (course) => course.courseId !== courseSlug
-      // );
-      // setRecommendedCourses(filteredCourses.slice(0, 4));
 
-      // Используем моковые данные (исключаем текущий курс)
-      setTimeout(() => {
-        const filteredCourses = mockCourses.items.filter(
-          (course) => course.courseId !== courseSlug,
-        );
-        setRecommendedCourses(filteredCourses.slice(0, 4));
-        setRecommendedLoading(false);
-      }, 300);
+      const response = await courseApi.getCourses(0, 4);
+      const filteredCourses = response.items.filter(
+        (course) => course.courseId !== courseSlug
+      );
+      setRecommendedCourses(filteredCourses.slice(0, 4));
+
+     
     } catch (err) {
       console.error("Error fetching recommended courses:", err);
       setRecommendedError(true);
@@ -276,7 +265,7 @@ export default function CoursePage() {
                   <div className="px-10 py-3 hover:bg-gray-50 transition-colors border-t border-gray-100">
                     {isAuth ? (
                       <Link
-                        href={`/course/${courseSlug}/module/${module.moduleId}/exam/${module.examId}`}
+                        href={`/course/${courseSlug}/module/${module.moduleId}/exam/`}
                         className="text-primary hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
                       >
                         <span className="font-medium">Итоговый экзамен</span>

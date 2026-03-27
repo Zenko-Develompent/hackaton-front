@@ -1,10 +1,13 @@
-// entities/course/model/mockData.ts
-import type {
-  Course,
-  CourseDetails,
-  CourseTree,
-  CoursesResponse,
+
+
+// ==================== COURSE MOCKS ====================
+import type { 
+  Course, 
+  CourseDetails, 
+  CourseTree, 
+  CoursesResponse, 
   ModuleShort,
+  CourseProgress 
 } from "@/entities/course/model/types";
 
 export const mockCourses: CoursesResponse = {
@@ -67,6 +70,7 @@ export const mockCourseDetails: CourseDetails = {
       description: "Основные концепции и инструменты",
       lessonCount: 4,
       examId: "exam-1",
+      unlocked: true,
     },
     {
       moduleId: "module-2",
@@ -74,6 +78,7 @@ export const mockCourseDetails: CourseDetails = {
       description: "Изучаем базовые механики",
       lessonCount: 5,
       examId: "exam-2",
+      unlocked: false,
     },
     {
       moduleId: "module-3",
@@ -81,6 +86,7 @@ export const mockCourseDetails: CourseDetails = {
       description: "Создаём визуальное оформление",
       lessonCount: 4,
       examId: "exam-3",
+      unlocked: false,
     },
     {
       moduleId: "module-4",
@@ -88,6 +94,7 @@ export const mockCourseDetails: CourseDetails = {
       description: "Собираем всё вместе",
       lessonCount: 6,
       examId: null,
+      unlocked: false,
     },
   ],
 };
@@ -100,30 +107,35 @@ export const mockCourseTree: CourseTree = {
       moduleId: "module-1",
       name: "Введение в игровую разработку",
       examId: "exam-1",
+      unlocked: true,
       lessons: [
         {
           lessonId: "lesson-1-1",
           name: "Что такое игры и как они создаются",
           quizId: "quiz-1-1",
           taskId: null,
+          unlocked: true,
         },
         {
           lessonId: "lesson-1-2",
           name: "Выбор движка и инструментов",
           quizId: null,
           taskId: "task-1-2",
+          unlocked: true,
         },
         {
           lessonId: "lesson-1-3",
           name: "Установка и настройка окружения",
           quizId: "quiz-1-3",
           taskId: null,
+          unlocked: false,
         },
         {
           lessonId: "lesson-1-4",
           name: "Первая сцена: привет, мир!",
           quizId: null,
           taskId: "task-1-4",
+          unlocked: false,
         },
       ],
     },
@@ -131,36 +143,42 @@ export const mockCourseTree: CourseTree = {
       moduleId: "module-2",
       name: "Основы программирования игр",
       examId: "exam-2",
+      unlocked: false,
       lessons: [
         {
           lessonId: "lesson-2-1",
           name: "Переменные и типы данных",
           quizId: "quiz-2-1",
           taskId: "task-2-1",
+          unlocked: false,
         },
         {
           lessonId: "lesson-2-2",
           name: "Условия и циклы",
           quizId: "quiz-2-2",
           taskId: "task-2-2",
+          unlocked: false,
         },
         {
           lessonId: "lesson-2-3",
           name: "Функции и методы",
           quizId: "quiz-2-3",
           taskId: null,
+          unlocked: false,
         },
         {
           lessonId: "lesson-2-4",
           name: "Объекты и классы",
           quizId: null,
           taskId: "task-2-4",
+          unlocked: false,
         },
         {
           lessonId: "lesson-2-5",
           name: "Практика: движение персонажа",
           quizId: "quiz-2-5",
           taskId: "task-2-5",
+          unlocked: false,
         },
       ],
     },
@@ -168,30 +186,35 @@ export const mockCourseTree: CourseTree = {
       moduleId: "module-3",
       name: "Графика и анимация",
       examId: "exam-3",
+      unlocked: false,
       lessons: [
         {
           lessonId: "lesson-3-1",
           name: "Основы работы с графикой",
           quizId: "quiz-3-1",
           taskId: null,
+          unlocked: false,
         },
         {
           lessonId: "lesson-3-2",
           name: "Спрайты и текстуры",
           quizId: null,
           taskId: "task-3-2",
+          unlocked: false,
         },
         {
           lessonId: "lesson-3-3",
           name: "Создание анимаций",
           quizId: "quiz-3-3",
           taskId: "task-3-3",
+          unlocked: false,
         },
         {
           lessonId: "lesson-3-4",
           name: "Эффекты и частицы",
           quizId: "quiz-3-4",
           taskId: null,
+          unlocked: false,
         },
       ],
     },
@@ -199,92 +222,148 @@ export const mockCourseTree: CourseTree = {
       moduleId: "module-4",
       name: "Создание полноценной игры",
       examId: null,
+      unlocked: false,
       lessons: [
         {
           lessonId: "lesson-4-1",
           name: "Проектирование игровых механик",
           quizId: "quiz-4-1",
           taskId: "task-4-1",
+          unlocked: false,
         },
         {
           lessonId: "lesson-4-2",
           name: "Создание уровней",
           quizId: null,
           taskId: "task-4-2",
+          unlocked: false,
         },
         {
           lessonId: "lesson-4-3",
           name: "Добавление звуков и музыки",
           quizId: "quiz-4-3",
           taskId: null,
+          unlocked: false,
         },
         {
           lessonId: "lesson-4-4",
           name: "UI и меню",
           quizId: "quiz-4-4",
           taskId: "task-4-4",
+          unlocked: false,
         },
         {
           lessonId: "lesson-4-5",
           name: "Тестирование и отладка",
           quizId: null,
           taskId: "task-4-5",
+          unlocked: false,
         },
         {
           lessonId: "lesson-4-6",
           name: "Публикация игры",
           quizId: "quiz-4-6",
           taskId: "task-4-6",
+          unlocked: false,
         },
       ],
     },
   ],
 };
 
-export const mockModules = {
+export const mockCourseProgress: CourseProgress = {
+  targetId: "course-1",
+  targetType: "course",
+  percent: 25,
+  completed: false,
+  doneItems: 1,
+  totalItems: 4,
+};
+
+// ==================== MODULE MOCKS ====================
+import type { Module, ModuleExam, ModuleExamResponse, ModuleProgress } from "@/entities/module/model/types";
+
+export const mockModule: Module = {
+  moduleId: "module-1",
+  courseId: "course-1",
+  name: "Введение в игровую разработку",
+  description: "В этом модуле вы познакомитесь с основами создания игр, выберете инструменты и создадите свою первую сцену.",
+  exam: {
+    examId: "exam-1",
+    name: "Итоговый экзамен модуля 1",
+    questionsCount: 10,
+    tasksCount: 2,
+  },
+};
+
+export const mockModuleLessons = {
   items: [
     {
-      moduleId: "module-1",
-      name: "Введение в игровую разработку",
-      description: "Основные концепции и инструменты",
-      lessonCount: 4,
-      examId: "exam-1",
+      lessonId: "lesson-1-1",
+      name: "Что такое игры и как они создаются",
+      description: "История игр и этапы создания",
+      xp: 50,
+      quizId: "quiz-1-1",
+      taskId: null,
+      unlocked: true,
     },
     {
-      moduleId: "module-2",
-      name: "Основы программирования игр",
-      description: "Изучаем базовые механики",
-      lessonCount: 5,
-      examId: "exam-2",
+      lessonId: "lesson-1-2",
+      name: "Выбор движка и инструментов",
+      description: "Обзор популярных игровых движков",
+      xp: 75,
+      quizId: null,
+      taskId: "task-1-2",
+      unlocked: true,
     },
     {
-      moduleId: "module-3",
-      name: "Графика и анимация",
-      description: "Создаём визуальное оформление",
-      lessonCount: 4,
-      examId: "exam-3",
+      lessonId: "lesson-1-3",
+      name: "Установка и настройка окружения",
+      description: "Практическое руководство по установке",
+      xp: 50,
+      quizId: "quiz-1-3",
+      taskId: null,
+      unlocked: false,
     },
     {
-      moduleId: "module-4",
-      name: "Создание полноценной игры",
-      description: "Собираем всё вместе",
-      lessonCount: 6,
-      examId: null,
+      lessonId: "lesson-1-4",
+      name: "Первая сцена: привет, мир!",
+      description: "Создаем первый проект",
+      xp: 100,
+      quizId: null,
+      taskId: "task-1-4",
+      unlocked: false,
     },
   ],
 };
 
+export const mockModuleExam: ModuleExamResponse = {
+  examId: "exam-1",
+  moduleId: "module-1",
+  name: "Итоговый экзамен модуля 1",
+  description: "Финальная проверка знаний по модулю",
+  questionsCount: 10,
+  tasksCount: 2,
+};
 
-// entities/lesson/model/mockData.ts
-import type { Lesson, LessonQuiz, LessonTask } from "@/entities/lesson/model/types";
+export const mockModuleProgress: ModuleProgress = {
+  targetId: "module-1",
+  targetType: "module",
+  percent: 50,
+  completed: false,
+  doneItems: 2,
+  totalItems: 4,
+};
 
-export const mockLessons: Record<string, Lesson> = {
-  "lesson-1-1": {
-    lessonId: "lesson-1-1",
-    moduleId: "module-1",
-    name: "Что такое игры и как они создаются",
-    description: "В этом уроке мы познакомимся с историей игр, основными жанрами и этапами создания игр.",
-    content: `# Что такое игры?
+// ==================== LESSON MOCKS ====================
+import type { Lesson, LessonQuiz, LessonTask, LessonProgress } from "@/entities/lesson/model/types";
+
+export const mockLessons: Lesson[] = [{
+  lessonId: "lesson-1-1",
+  moduleId: "module-1",
+  name: "Что такое игры и как они создаются",
+  description: "В этом уроке мы познакомимся с историей игр, основными жанрами и этапами создания игр.",
+  content: `# Что такое игры?
 
 Игры существуют с древних времен. Первые компьютерные игры появились в 1950-х годах.
 
@@ -307,585 +386,300 @@ export const mockLessons: Record<string, Lesson> = {
 5. Релиз и поддержка
 
 > Интересный факт: первая компьютерная игра была создана в 1958 году физиком Уильямом Хигинботамом.`,
-    xp: 50,
-    quizId: "quiz-1-1",
-    taskId: null,
-  },
-  "lesson-1-2": {
-    lessonId: "lesson-1-2",
-    moduleId: "module-1",
-    name: "Выбор движка и инструментов",
-    description: "Узнаем о популярных игровых движках и выберем подходящий для нашего проекта.",
-    content: `# Игровые движки
+  xp: 50,
+  quizId: "quiz-1-1",
+  taskId: null,
+}]
 
-Игровой движок - это основа любой игры. Он предоставляет готовые инструменты для разработки.
-
-## Популярные движки
-
-### Unity
-- **Плюсы**: большой рынок, C#, огромное сообщество
-- **Минусы**: сложность с оптимизацией
-- **Лучше всего подходит**: мобильные игры, инди-проекты
-
-### Unreal Engine
-- **Плюсы**: графика AAA уровня, Blueprints
-- **Минусы**: сложный порог входа
-- **Лучше всего подходит**: AAA проекты, шутеры
-
-### Godot
-- **Плюсы**: бесплатный, легкий, открытый код
-- **Минусы**: мало вакансий
-- **Лучше всего подходит**: 2D игры, инди-проекты
-
-## Выбор для нашего курса
-Для создания первой игры мы будем использовать **Unity** по следующим причинам:
-- \`\`\`csharp
-// Простой синтаксис C#
-void Start() {
-    Debug.Log("Hello, World!");
-}
-\`\`\`
-- Огромное количество обучающих материалов
-- Кроссплатформенность
-
-## Установка
-1. Перейдите на [официальный сайт Unity](https://unity.com)
-2. Скачайте Unity Hub
-3. Установите последнюю версию Unity
-4. Установите Visual Studio Community
-
-> **Важно**: выберите версию LTS (Long Term Support) для стабильной работы.`,
-    xp: 75,
-    quizId: null,
-    taskId: "task-1-2",
-  },
-  "lesson-1-3": {
-    lessonId: "lesson-1-3",
-    moduleId: "module-1",
-    name: "Установка и настройка окружения",
-    description: "Установим необходимые инструменты и настроим рабочее окружение.",
-    content: `# Установка инструментов разработки
-
-## Шаг 1: Установка Unity Hub
-
-Unity Hub - это менеджер для управления версиями Unity и проектами.
-
-1. Скачайте Unity Hub с официального сайта
-2. Запустите установщик
-3. Следуйте инструкциям установщика
-
-## Шаг 2: Установка Unity Editor
-
-После установки Unity Hub:
-
-1. Откройте Unity Hub
-2. Перейдите во вкладку **Installs**
-3. Нажмите **Install Editor**
-4. Выберите версию **LTS** (рекомендуется)
-5. Установите следующие компоненты:
-   - \`Windows Build Support\` (для сборки под Windows)
-   - \`WebGL Build Support\` (для сборки в браузер)
-   - \`Documentation\`
-
-## Шаг 3: Установка Visual Studio
-
-Для написания кода нам понадобится редактор:
-
-\`\`\`
-1. Скачайте Visual Studio Community
-2. Во время установки выберите:
-   - .NET desktop development
-   - Game development with Unity
-\`\`\`
-
-## Шаг 4: Настройка Visual Studio
-
-После установки:
-1. Откройте Visual Studio
-2. В меню **Tools** → **Get Tools and Features**
-3. Убедитесь, что установлен пакет **Game development with Unity**
-
-## Проверка установки
-
-Создайте новый проект в Unity:
-\`\`\`csharp
-using UnityEngine;
-
-public class Test : MonoBehaviour
-{
-    void Start()
-    {
-        Debug.Log("Установка прошла успешно!");
-    }
-}
-\`\`\`
-
-Если вы видите сообщение в консоли Unity, значит всё работает правильно.`,
-    xp: 50,
-    quizId: "quiz-1-3",
-    taskId: null,
-  },
-  "lesson-1-4": {
-    lessonId: "lesson-1-4",
-    moduleId: "module-1",
-    name: "Первая сцена: привет, мир!",
-    description: "Создадим первую сцену и выведем на экран 'Привет, мир!'",
-    content: `# Создаем первую сцену
-
-## Создание нового проекта
-
-1. Откройте Unity Hub
-2. Нажмите **New Project**
-3. Выберите шаблон **2D Core** или **3D Core**
-4. Укажите имя проекта: \`MyFirstGame\`
-5. Нажмите **Create**
-
-## Структура проекта
-
-После создания проекта вы увидите:
-- **Scene** - окно сцены
-- **Game** - окно игры
-- **Hierarchy** - иерархия объектов
-- **Inspector** - свойства объекта
-- **Project** - файлы проекта
-- **Console** - вывод ошибок и сообщений
-
-## Создаем первый объект
-
-1. В Hierarchy нажмите правой кнопкой мыши
-2. Выберите **3D Object** → **Cube**
-3. Вы увидите куб в сцене
-
-## Пишем скрипт
-
-Создадим скрипт, который будет выводить сообщение:
-
-\`\`\`csharp
-using UnityEngine;
-
-public class HelloWorld : MonoBehaviour
-{
-    void Start()
-    {
-        Debug.Log("Привет, мир! Добро пожаловать в разработку игр!");
-    }
-    
-    void Update()
-    {
-        // Этот метод вызывается каждый кадр
-    }
-}
-\`\`\`
-
-1. В окне Project нажмите правой кнопкой мыши
-2. Выберите **Create** → **C# Script**
-3. Назовите его \`HelloWorld\`
-4. Дважды кликните по скрипту (откроется Visual Studio)
-5. Вставьте код выше
-6. Сохраните файл
-
-## Прикрепляем скрипт к объекту
-
-1. Выделите Cube в Hierarchy
-2. Перетащите скрипт \`HelloWorld\` из Project в Inspector на куб
-3. Нажмите **Play** (треугольник вверху)
-4. Посмотрите в Console - вы увидите сообщение
-
-## Результат
-
-Поздравляю! Вы создали свою первую сцену и написали первый скрипт!
-
-\`\`\`
-[Message] Привет, мир! Добро пожаловать в разработку игр!
-\`\`\`
-
-Теперь вы готовы к созданию настоящей игры!`,
-    xp: 100,
-    quizId: null,
-    taskId: "task-1-4",
-  },
-  "lesson-2-1": {
-    lessonId: "lesson-2-1",
-    moduleId: "module-2",
-    name: "Переменные и типы данных",
-    description: "Изучим основные типы данных и научимся работать с переменными.",
-    content: `# Переменные и типы данных в C#
-
-## Что такое переменная?
-
-Переменная - это контейнер для хранения данных. Представьте, что это коробка с именем, в которую можно положить значение.
-
-## Основные типы данных
-
-### Целочисленные типы
-\`\`\`csharp
-int age = 25;           // целые числа
-byte level = 10;        // от 0 до 255
-long score = 999999;    // большие числа
-\`\`\`
-
-### Числа с плавающей точкой
-\`\`\`csharp
-float speed = 5.5f;     // числа с точкой (нужна f)
-double gravity = 9.81;  // двойная точность
-\`\`\`
-
-### Логический тип
-\`\`\`csharp
-bool isGameOver = false; // true или false
-bool isPlayerAlive = true;
-\`\`\`
-
-### Строковый тип
-\`\`\`csharp
-string playerName = "Игрок 1";
-char grade = 'A';        // один символ
-\`\`\`
-
-## Объявление переменных
-
-\`\`\`csharp
-public class Player : MonoBehaviour
-{
-    // Объявление переменных
-    public int health = 100;
-    private float speed = 5f;
-    protected string playerName = "Hero";
-    
-    void Start()
-    {
-        // Локальная переменная
-        int localScore = 0;
-        
-        Debug.Log("Здоровье: " + health);
-        Debug.Log($"Скорость: {speed}");
-        Debug.Log($"Имя: {playerName}");
-    }
-}
-\`\`\`
-
-## Модификаторы доступа
-
-- \`public\` - доступно везде
-- \`private\` - только внутри класса
-- \`protected\` - доступно в классе и наследниках
-
-## Константы
-
-\`\`\`csharp
-const float GRAVITY = 9.81f;
-const int MAX_HEALTH = 100;
-\`\`\`
-
-## Практический пример
-
-\`\`\`csharp
-using UnityEngine;
-
-public class PlayerStats : MonoBehaviour
-{
-    // Публичные переменные видны в Inspector
-    public string playerName = "Hero";
-    public int maxHealth = 100;
-    public float moveSpeed = 5f;
-    
-    // Приватные переменные
-    private int currentHealth;
-    private int experiencePoints;
-    private bool isDead = false;
-    
-    void Start()
-    {
-        currentHealth = maxHealth;
-        experiencePoints = 0;
-        
-        Debug.Log($"{playerName} создан!");
-        Debug.Log($"Здоровье: {currentHealth}/{maxHealth}");
-    }
-    
-    public void TakeDamage(int damage)
-    {
-        currentHealth -= damage;
-        
-        if (currentHealth <= 0)
-        {
-            currentHealth = 0;
-            isDead = true;
-            Debug.Log($"{playerName} погиб!");
-        }
-        else
-        {
-            Debug.Log($"{playerName} получил {damage} урона. Осталось: {currentHealth}");
-        }
-    }
-    
-    public void AddExperience(int xp)
-    {
-        experiencePoints += xp;
-        Debug.Log($"Получено {xp} опыта! Всего: {experiencePoints}");
-    }
-}
-\`\`\`
-
-## Упражнение
-
-Создайте свой класс для игрового объекта с 5 разными переменными разных типов.
-
-> **Совет**: всегда давайте переменным понятные имена на английском языке.`,
-    xp: 75,
-    quizId: "quiz-2-1",
-    taskId: "task-2-1",
-  },
+export const mockLessonQuiz: LessonQuiz = {
+  quizId: "quiz-1-1",
+  lessonId: "lesson-1-1",
+  name: "Тест: История игр",
+  description: "Проверь свои знания об истории компьютерных игр",
+  questionsCount: 5,
 };
 
-export const mockQuizzes: Record<string, LessonQuiz> = {
-  "quiz-1-1": {
-    quizId: "quiz-1-1",
-    lessonId: "lesson-1-1",
-    name: "Тест: История игр",
-    description: "Проверь свои знания об истории компьютерных игр",
-    questionsCount: 5,
-  },
-  "quiz-1-3": {
-    quizId: "quiz-1-3",
-    lessonId: "lesson-1-3",
-    name: "Тест: Настройка окружения",
-    description: "Проверь, правильно ли ты установил и настроил инструменты",
-    questionsCount: 3,
-  },
-  "quiz-2-1": {
-    quizId: "quiz-2-1",
-    lessonId: "lesson-2-1",
-    name: "Тест: Переменные и типы данных",
-    description: "Проверь понимание переменных и типов данных",
-    questionsCount: 5,
-  },
+export const mockLessonTask: LessonTask = {
+  taskId: "task-1-2",
+  lessonId: "lesson-1-2",
+  examId: null,
+  name: "Задание: Установка Unity",
+  description: "Установи Unity и создай новый проект",
+  runnerLanguage: "bash",
+  xpReward: 75,
+  coinReward: 50,
 };
 
-export const mockTasks: Record<string, LessonTask> = {
-  "task-1-2": {
-    taskId: "task-1-2",
-    lessonId: "lesson-1-2",
-    examId: null,
-    name: "Задание: Установка Unity",
-    description: "Установи Unity и создай новый проект",
-  },
-  "task-1-4": {
-    taskId: "task-1-4",
-    lessonId: "lesson-1-4",
-    examId: null,
-    name: "Задание: Первая сцена",
-    description: "Создай первую сцену с текстом 'Привет, мир!'",
-  },
-  "task-2-1": {
-    taskId: "task-2-1",
-    lessonId: "lesson-2-1",
-    examId: null,
-    name: "Задание: Переменные",
-    description: "Создай несколько переменных разных типов и выведи их значения",
-  },
+export const mockLessonProgress: LessonProgress = {
+  targetId: "lesson-1-1",
+  targetType: "lesson",
+  percent: 0,
+  completed: false,
+  doneItems: 0,
+  totalItems: 1,
 };
 
-// entities/module/model/mockData.ts
-import type { Module, LessonShort } from "@/entities/module/model/types";
+// ==================== QUIZ MOCKS ====================
+import type { 
+  QuizQuestion, 
+  QuizStartResponse, 
+  QuizAnswerResponse, 
+  QuizQuestionsResponse,
+  QuizCompleteResponse 
+} from "@/entities/quiz/model/types";
 
-
-
-export const mockLessonsShort: Record<string, LessonShort[]> = {
-  "module-1": [
+export const mockQuizQuestions: QuizQuestionsResponse = {
+  items: [
     {
-      lessonId: "lesson-1-1",
-      name: "Что такое игры и как они создаются",
-      description: "История игр и этапы создания",
-      xp: 50,
+      questId: "q1",
       quizId: "quiz-1-1",
-      taskId: null,
-    },
-    {
-      lessonId: "lesson-1-2",
-      name: "Выбор движка и инструментов",
-      description: "Обзор популярных игровых движков",
-      xp: 75,
-      quizId: null,
-      taskId: "task-1-2",
-    },
-    {
-      lessonId: "lesson-1-3",
-      name: "Установка и настройка окружения",
-      description: "Практическое руководство по установке",
-      xp: 50,
-      quizId: "quiz-1-3",
-      taskId: null,
-    },
-    {
-      lessonId: "lesson-1-4",
-      name: "Первая сцена: привет, мир!",
-      description: "Создаем первый проект",
-      xp: 100,
-      quizId: null,
-      taskId: "task-1-4",
-    },
-  ],
-  "module-2": [
-    {
-      lessonId: "lesson-2-1",
-      name: "Переменные и типы данных",
-      description: "Основы хранения данных",
-      xp: 75,
-      quizId: "quiz-2-1",
-      taskId: "task-2-1",
-    },
-    {
-      lessonId: "lesson-2-2",
-      name: "Условия и циклы",
-      description: "Управление потоком программы",
-      xp: 100,
-      quizId: "quiz-2-2",
-      taskId: "task-2-2",
-    },
-    {
-      lessonId: "lesson-2-3",
-      name: "Функции и методы",
-      description: "Организация кода",
-      xp: 75,
-      quizId: "quiz-2-3",
-      taskId: null,
-    },
-    {
-      lessonId: "lesson-2-4",
-      name: "Объекты и классы",
-      description: "Объектно-ориентированное программирование",
-      xp: 100,
-      quizId: null,
-      taskId: "task-2-4",
-    },
-    {
-      lessonId: "lesson-2-5",
-      name: "Практика: движение персонажа",
-      description: "Реализуем движение",
-      xp: 150,
-      quizId: "quiz-2-5",
-      taskId: "task-2-5",
-    },
-  ],
-};
-
-// entities/quiz/model/mockData.ts
-import type { QuizStartResponse, QuizAnswerResponse, QuizQuestion } from "@/entities/quiz/model/types";
-
-export const mockQuizQuestions: Record<string, QuizQuestion[]> = {
-  "quiz-1-1": [
-    {
-      questionId: "q1",
+      examId: null,
       name: "Когда появилась первая компьютерная игра?",
       description: "Выберите правильный год",
-      index: 0,
-      total: 5,
-      options: [
-        { answerId: "a1", name: "1940-е", description: "" },
-        { answerId: "a2", name: "1950-е", description: "" },
-        { answerId: "a3", name: "1960-е", description: "" },
-        { answerId: "a4", name: "1970-е", description: "" },
-      ],
     },
     {
-      questionId: "q2",
+      questId: "q2",
+      quizId: "quiz-1-1",
+      examId: null,
       name: "Какой жанр игры считается самым первым?",
       description: "Выберите правильный ответ",
-      index: 1,
-      total: 5,
-      options: [
-        { answerId: "a1", name: "Action", description: "" },
-        { answerId: "a2", name: "Strategy", description: "" },
-        { answerId: "a3", name: "Simulation", description: "" },
-        { answerId: "a4", name: "Puzzle", description: "" },
-      ],
-    },
-  ],
-  "quiz-2-1": [
-    {
-      questionId: "q1",
-      name: "Какой тип данных используется для хранения целых чисел?",
-      description: "Выберите правильный ответ",
-      index: 0,
-      total: 5,
-      options: [
-        { answerId: "a1", name: "string", description: "" },
-        { answerId: "a2", name: "float", description: "" },
-        { answerId: "a3", name: "int", description: "" },
-        { answerId: "a4", name: "bool", description: "" },
-      ],
-    },
-    {
-      questionId: "q2",
-      name: "Как объявить переменную в C#?",
-      description: "Выберите правильный синтаксис",
-      index: 1,
-      total: 5,
-      options: [
-        { answerId: "a1", name: "variable = 5", description: "" },
-        { answerId: "a2", name: "int variable = 5", description: "" },
-        { answerId: "a3", name: "var = 5", description: "" },
-        { answerId: "a4", name: "variable int = 5", description: "" },
-      ],
     },
   ],
 };
 
 export const mockQuizStartResponse: QuizStartResponse = {
   completed: false,
-  question: mockQuizQuestions["quiz-1-1"][0],
-  task: null,
+  question: {
+    questionId: "q1",
+    name: "Когда появилась первая компьютерная игра?",
+    description: "Выберите правильный год",
+    index: 1,
+    total: 5,
+    options: [
+      { answerId: "a1", name: "1940-е", description: "" },
+      { answerId: "a2", name: "1950-е", description: "" },
+      { answerId: "a3", name: "1960-е", description: "" },
+      { answerId: "a4", name: "1970-е", description: "" },
+    ],
+  },
 };
 
-export const mockQuizAnswerResponseCorrect: QuizAnswerResponse = {
+export const mockQuizAnswerResponse: QuizAnswerResponse = {
   correct: true,
   completed: false,
-  question: mockQuizQuestions["quiz-1-1"][1],
-  task: null,
+  xpGranted: 10,
+  coinGranted: 5,
+  question: {
+    questionId: "q2",
+    name: "Какой жанр игры считается самым первым?",
+    description: "Выберите правильный ответ",
+    index: 2,
+    total: 5,
+    options: [
+      { answerId: "a1", name: "Action", description: "" },
+      { answerId: "a2", name: "Strategy", description: "" },
+      { answerId: "a3", name: "Simulation", description: "" },
+      { answerId: "a4", name: "Puzzle", description: "" },
+    ],
+  },
 };
 
-export const mockQuizAnswerResponseCompleted: QuizAnswerResponse = {
-  correct: true,
+// ==================== EXAM MOCKS ====================
+import type { 
+  Exam, 
+  ExamQuestion, 
+  ExamTask, 
+  ExamCompleteResponse 
+} from "@/entities/exam/model/types";
+
+export const mockExam: Exam = {
+  examId: "exam-1",
+  moduleId: "module-1",
+  name: "Экзамен по модулю 1",
+  description: "Финальная проверка знаний",
+  xpReward: 100,
+  coinReward: 50,
+  questionsCount: 10,
+  tasksCount: 2,
+};
+
+export const mockExamQuestions = {
+  items: [
+    {
+      questId: "exam-q1",
+      quizId: null,
+      examId: "exam-1",
+      name: "Что такое игровой движок?",
+      description: "Опишите своими словами",
+    },
+    {
+      questId: "exam-q2",
+      quizId: null,
+      examId: "exam-1",
+      name: "Назовите основные этапы создания игры",
+      description: "Перечислите в правильном порядке",
+    },
+  ],
+};
+
+export const mockExamTasks = {
+  items: [
+    {
+      taskId: "exam-task-1",
+      examId: "exam-1",
+      lessonId: null,
+      name: "Создание первой сцены",
+      description: "Создайте сцену с текстом",
+      runnerLanguage: "csharp",
+      xpReward: 50,
+      coinReward: 25,
+    },
+  ],
+};
+
+export const mockExamCompleteResponse: ExamCompleteResponse = {
   completed: true,
-  question: null,
-  task: null,
+  firstCompletion: true,
+  xpGranted: 100,
+  coinGranted: 50,
+  questionsDone: 10,
+  questionsTotal: 10,
+  tasksDone: 2,
+  tasksTotal: 2,
 };
 
-// entities/auth/model/mockData.ts
-import type { UserShort, AuthTokens } from "@/entities/auth/model/types";
+// ==================== TASK MOCKS ====================
+import type { 
+  TaskStartResponse, 
+  TaskCompleteResponse, 
+  TaskRunResponse 
+} from "@/entities/task/model/types";
 
-export const mockUser: UserShort = {
-  id: "user-1",
-  username: "john_doe",
-  email: "john@example.com",
+export const mockTaskStartResponse: TaskStartResponse = {
+  taskId: "task-1-2",
+  lessonId: "lesson-1-2",
+  examId: null,
+  completed: false,
 };
 
-export const mockAuthTokens: AuthTokens = {
-  accessToken: "mock-access-token-12345",
-  accessExpiresAt: new Date(Date.now() + 3600000).toISOString(),
-  refreshToken: "mock-refresh-token-67890",
-  refreshExpiresAt: new Date(Date.now() + 86400000).toISOString(),
+export const mockTaskCompleteResponse: TaskCompleteResponse = {
+  taskId: "task-1-2",
+  lessonId: "lesson-1-2",
+  examId: null,
+  completed: true,
+  firstCompletion: true,
+  xpGranted: 75,
+  coinGranted: 50,
 };
 
-export const mockLoginResponse = {
-  ...mockAuthTokens,
-  deviceId: "device-1",
-  sessionId: "session-1",
-  sessionKey: "mock-session-key",
-  sessionKeyIv: "mock-session-key-iv",
-  user: mockUser,
+export const mockTaskRunResponse: TaskRunResponse = {
+  taskId: "task-1-2",
+  language: "csharp",
+  status: "ok",
+  correct: true,
+  stdout: "Hello, world!\n",
+  stderr: "",
+  exitCode: 0,
+  timedOut: false,
+  durationMs: 284,
+  completed: true,
+  firstCompletion: true,
+  xpGranted: 75,
+  coinGranted: 50,
 };
 
-export const mockRegisterResponse = {
-  needVerify: true,
-  ticket: "mock-ticket-123",
-  email: "newuser@example.com",
-  resendAfterSec: 60,
+// ==================== QUEST MOCKS ====================
+import type { QuestAnswersResponse, QuestCheckResponse } from "@/entities/quest/model/types";
+
+export const mockQuestAnswers: QuestAnswersResponse = {
+  items: [
+    { answerId: "a1", name: "1940-е", description: "" },
+    { answerId: "a2", name: "1950-е", description: "" },
+    { answerId: "a3", name: "1960-е", description: "" },
+    { answerId: "a4", name: "1970-е", description: "" },
+  ],
 };
 
-export const mockRefreshResponse = mockAuthTokens;
+export const mockQuestCheckResponse: QuestCheckResponse = {
+  correct: true,
+};
 
-export const mockLogoutResponse = {
-  ok: true,
+// ==================== COMMUNITY MOCKS ====================
+import type { LeaderboardResponse, FeedResponse } from "@/entities/community/model/types";
+
+export const mockLeaderboard: LeaderboardResponse = {
+  period: "week",
+  metric: "activity",
+  fromInclusive: "2026-03-20T10:00:00Z",
+  toInclusive: "2026-03-27T10:00:00Z",
+  items: [
+    { rank: 1, userId: "user-1", username: "john_doe", score: 145 },
+    { rank: 2, userId: "user-2", username: "jane_smith", score: 132 },
+    { rank: 3, userId: "user-3", username: "bob_wilson", score: 128 },
+  ],
+};
+
+export const mockFeed: FeedResponse = {
+  items: [
+    {
+      eventId: "event-1",
+      createdAt: "2026-03-27T10:02:00Z",
+      userId: "user-1",
+      username: "john_doe",
+      eventType: "quiz_completed",
+      activityScore: 10,
+      xpGranted: 12,
+      coinGranted: 6,
+      progressPercent: 100,
+      lessonId: "lesson-1-1",
+      quizId: "quiz-1-1",
+      taskId: null,
+      examId: null,
+      details: null,
+    },
+    {
+      eventId: "event-2",
+      createdAt: "2026-03-26T15:30:00Z",
+      userId: "user-2",
+      username: "jane_smith",
+      eventType: "task_completed",
+      activityScore: 15,
+      xpGranted: 75,
+      coinGranted: 50,
+      progressPercent: 100,
+      lessonId: "lesson-1-2",
+      quizId: null,
+      taskId: "task-1-2",
+      examId: null,
+      details: null,
+    },
+    {
+      eventId: "event-3",
+      createdAt: "2026-03-25T09:15:00Z",
+      userId: "user-1",
+      username: "john_doe",
+      eventType: "level_up",
+      activityScore: 20,
+      xpGranted: 0,
+      coinGranted: 0,
+      progressPercent: 100,
+      lessonId: null,
+      quizId: null,
+      taskId: null,
+      examId: null,
+      details: { level: 2 },
+    },
+  ],
+};
+
+
+
+
+export const mockQuizCompleteResponse: QuizCompleteResponse = {
+  completed: true,
+  firstCompletion: true,
+  xpGranted: 50,
+  coinGranted: 25,
+  totalQuestions: 5,
+  correctAnswers: 5,
 };

@@ -11,7 +11,11 @@ import { courseApi } from "@/entities/course/api/course.api";
 import type { Course } from "@/entities/course/model/types";
 import { mockCourses } from "@/entities/mockData";
 
+
+
 export default function Home() {
+
+  document.title="Доки Доки | Главная"
   const auth = useAuth();
   const router = useRouter();
   
@@ -33,15 +37,12 @@ export default function Home() {
       setLoading(true);
       setError(false);
       
-      // Для реального API:
-      // const response = await courseApi.getCourses(0, 4);
-      // setCourses(response.items);
+
+      const response = await courseApi.getCourses(0, 4);
+      console.log(response)
+      setCourses(response.items);
       
-      // Используем моковые данные
-      setTimeout(() => {
-        setCourses(mockCourses.items);
-        setLoading(false);
-      }, 500);
+      
     } catch (err) {
       console.error("Error fetching courses:", err);
       setError(true);
@@ -79,7 +80,7 @@ export default function Home() {
           <h1 className="font-semibold text-[40px]">
             Создавай игры, сайты и приложения — а не просто смотри уроки
           </h1>
-          <p className="opacity-80">
+          <p className="opacity-80 ">
             Начни путь в IT уже сейчас: программирование, дизайн и разработка —
             через практику и реальные проекты
           </p>

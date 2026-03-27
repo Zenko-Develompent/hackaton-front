@@ -1,14 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { usePathname } from 'next/navigation'; // добавляем
+import { usePathname } from 'next/navigation';
 import { AuthContext } from './auth-context';
-import { tokenStorage } from '@/shared/lib/storage';
-import { userApi } from '@/entities/user/api/user.api';
 import { authApi } from '@/entities/auth/api/auth.api';
 import { useApiInitialized } from '@/features/api/ApiInitializer';
-import type { UserProfile } from '@/entities/user/model/types';
-import { Spinner } from '@/components/ui/spinner';
+import type { UserProfile, User } from '@/entities/auth/model/types';
 import { ScreenLoader } from '@/widgets/ScreenLoader/ScreenLoader';
 
 export const AuthProvider = ({
@@ -17,13 +14,14 @@ export const AuthProvider = ({
   children: React.ReactNode;
 }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [fullUser, setFullUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isMountedRef = useRef(true);
   const { isInitialized: isApiInitialized } = useApiInitialized();
-  const pathname = usePathname(); // отслеживаем путь
+  const pathname = usePathname();
   const prevPathnameRef = useRef(pathname);
 
-  const isAuth = !!user;
+  const isAuth = !!user || !!fullUser;
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -35,7 +33,7 @@ export const AuthProvider = ({
   const fetchUser = useCallback(async () => {
     try {
       console.log('[AuthProvider] Fetching user profile...');
-      const data = await userApi.getProfile();
+      const data = await authApi.getProfile();
       
       if (isMountedRef.current) {
         setUser(data);
@@ -57,11 +55,23 @@ export const AuthProvider = ({
     refreshToken: string;
   }) => {
     console.log('[AuthProvider] Logging in...');
-    tokenStorage.setAccess(accessToken);
-    tokenStorage.setRefresh(refreshToken);
-
+    
+    // Сохраняем токены
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+    
+    // Проверяем, что токен сохранился
+    const savedToken = localStorage.getItem('access_token');
+    console.log('[AuthProvider] Token saved:', !!savedToken);
+    
+    if (!savedToken) {
+      throw new Error('Failed to save token');
+    }
+    
+    // Небольшая задержка для синхронизации
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 0));
       const userData = await fetchUser();
       
       if (isMountedRef.current) {
@@ -71,17 +81,82 @@ export const AuthProvider = ({
     } catch (error) {
       console.error('[AuthProvider] Login failed:', error);
       if (isMountedRef.current) {
-        tokenStorage.clear();
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         setUser(null);
+        setFullUser(null);
       }
       throw error;
     }
   }, [fetchUser]);
 
+  // Новая функция регистрации
+  const register = useCallback(async ({
+    username,
+    password,
+    age,
+    role,
+  }: {
+    username: string;
+    password: string;
+    age: string;
+    role: 'student' | 'parent';
+  }) => {
+    console.log('[AuthProvider] Registering...');
+    
+    try {
+      // Выполняем регистрацию
+      const response = await authApi.register({
+        username,
+        password,
+        age,
+        role,
+      });
+      
+      console.log('[AuthProvider] Registration successful, saving tokens...');
+      
+      // Сохраняем токены
+      localStorage.setItem('access_token', response.accessToken);
+      localStorage.setItem('refresh_token', response.refreshToken);
+      
+      // Сохраняем полную информацию о пользователе
+      if (isMountedRef.current) {
+        setFullUser(response.user);
+        
+        // Загружаем профиль пользователя
+        try {
+          const userProfile = await authApi.getProfile();
+          setUser(userProfile);
+        } catch (profileError) {
+          console.error('[AuthProvider] Failed to fetch profile after registration:', profileError);
+          // Если не удалось загрузить профиль, создаем базовый из данных регистрации
+          setUser({
+            username: response.user.username,
+            level: response.user.level || 0,
+            achievements: [],
+          });
+        }
+      }
+      
+      console.log('[AuthProvider] Registration completed successfully');
+      
+      return response;
+    } catch (error) {
+      console.error('[AuthProvider] Registration failed:', error);
+      if (isMountedRef.current) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        setUser(null);
+        setFullUser(null);
+      }
+      throw error;
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     console.log('[AuthProvider] Logging out...');
     try {
-      const refreshToken = tokenStorage.getRefresh();
+      const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         await authApi.logout(refreshToken);
       }
@@ -89,55 +164,41 @@ export const AuthProvider = ({
       console.error('[AuthProvider] Logout API call failed:', error);
     } finally {
       if (isMountedRef.current) {
-        tokenStorage.clear();
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         setUser(null);
+        setFullUser(null);
       }
       console.log('[AuthProvider] Logout successful');
     }
   }, []);
 
-  // 🔥 Функция проверки аутентификации
   const checkAuth = useCallback(async () => {
     console.log('[AuthProvider] Checking auth state...');
-    const access = tokenStorage.getAccess();
-    const refresh = tokenStorage.getRefresh();
+    const access = localStorage.getItem('access_token');
 
-    if (!access && !refresh) {
-      console.log('[AuthProvider] No tokens found, skipping auth check');
+    if (!access) {
+      console.log('[AuthProvider] No access token found');
       setUser(null);
+      setFullUser(null);
       return false;
     }
 
     try {
-      console.log('[AuthProvider] Tokens found, fetching user...');
+      console.log('[AuthProvider] Token found, fetching user...');
       await fetchUser();
       console.log('[AuthProvider] Auth state verified successfully');
       return true;
     } catch (error) {
-      console.error('[AuthProvider] Failed to fetch user with existing tokens:', error);
-      
-      // Пробуем обновить токены
-      try {
-        console.log('[AuthProvider] Attempting to refresh tokens...');
-        const data = await authApi.refresh();
-        
-        tokenStorage.setAccess(data.accessToken);
-        tokenStorage.setRefresh(data.refreshToken);
-        
-        console.log('[AuthProvider] Tokens refreshed, fetching user again...');
-        await fetchUser();
-        console.log('[AuthProvider] Auth state restored after refresh');
-        return true;
-      } catch (refreshError) {
-        console.error('[AuthProvider] Refresh failed, clearing tokens:', refreshError);
-        tokenStorage.clear();
-        setUser(null);
-        return false;
-      }
+      console.error('[AuthProvider] Failed to fetch user:', error);
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setUser(null);
+      setFullUser(null);
+      return false;
     }
   }, [fetchUser]);
 
-  // 🔥 Инициализация при монтировании
   useEffect(() => {
     if (!isApiInitialized) return;
     
@@ -150,16 +211,11 @@ export const AuthProvider = ({
     init();
   }, [isApiInitialized, checkAuth]);
 
-  // 🔥 ОТСЛЕЖИВАЕМ ИЗМЕНЕНИЯ РОУТА
   useEffect(() => {
     if (!isApiInitialized) return;
     
-    // Проверяем, изменился ли путь
     if (prevPathnameRef.current !== pathname) {
-      console.log('[AuthProvider] Route changed from', prevPathnameRef.current, 'to', pathname);
-      console.log('[AuthProvider] Re-checking auth state...');
-      
-      // Перепроверяем аутентификацию при смене роута
+      console.log('[AuthProvider] Route changed, re-checking auth...');
       checkAuth();
       prevPathnameRef.current = pathname;
     }
@@ -172,18 +228,18 @@ export const AuthProvider = ({
   }, []);
 
   if (!isMounted || !isApiInitialized || isLoading) {
-    return (
-      <ScreenLoader/>
-    );
+    return <ScreenLoader />;
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        fullUser,
         isAuth,
         isLoading,
         login,
+        register,
         logout,
       }}
     >
