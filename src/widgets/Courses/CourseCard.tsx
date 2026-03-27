@@ -7,8 +7,8 @@ export const CourseCard = () => {
       <div className="flex justify-between">
         <div className="flex flex-col gap-3 flex-3">
           <h3 className="font-semibold text-2xl">Заголовок</h3>
-          <p className="opacity-60">Примечание</p>
-          <p className="opacity-60">Примечание</p>
+          <p className="opacity-60">Примечание1</p>
+          <p className="opacity-60">Примечание2</p>
         </div>
         <img
           className="flex-1 aspect-square rounded-[20px] bg-primary/4"
