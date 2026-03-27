@@ -13,16 +13,11 @@ import {
   TaskRunner,
   ProgressBar 
 } from "@/shared/ui";
-import { 
-  mockExam,
-  mockExamQuestions,
-  mockExamTasks,
-  mockExamCompleteResponse,
-  mockQuestAnswers,
-  mockQuestCheckResponse,
-  mockCourseTree,
-  mockModule
-} from "@/entities/mockData";
+import { courseApi } from "@/entities/course/api/course.api";
+import { moduleApi } from "@/entities/module/api/module.api";
+import { examApi } from "@/entities/exam/api/exam.api";
+import { questApi } from "@/entities/quest/api/quest.api";
+import { taskApi } from "@/entities/task/api/task.api";
 import type { ModuleExamResponse } from "@/entities/module/model/types";
 import type { Exam, ExamQuestion, ExamTask } from "@/entities/exam/model/types";
 
@@ -51,7 +46,6 @@ export default function ExamPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [showRetryDialog, setShowRetryDialog] = useState(false);
   
@@ -70,35 +64,48 @@ export default function ExamPage() {
         setLoading(true);
         setError(null);
         
-        setTimeout(() => {
-          const currentCourse = mockCourseTree;
-          const currentModuleData = mockModule;
+        // Получаем информацию об экзамене модуля
+        const examInfo = await moduleApi.getExam(moduleSlug);
+        setExam(examInfo);
+        
+        if (examInfo) {
+          // Получаем детальную информацию об экзамене
+          const examDetailsData = await examApi.getExam(examInfo.examId);
+          setExamDetails(examDetailsData);
           
-          setCourseName(currentCourse.name);
-          setModuleName(currentModuleData.name);
+          // Получаем вопросы экзамена
+          const questionsData = await examApi.getQuestions(examInfo.examId);
+          setQuestions(questionsData.items);
           
-          const examInfo: ModuleExamResponse = {
-            examId: mockExam.examId,
-            moduleId: moduleSlug,
-            name: mockExam.name,
-            description: mockExam.description,
-            questionsCount: mockExam.questionsCount,
-            tasksCount: mockExam.tasksCount,
-          };
-          setExam(examInfo);
-          setExamDetails(mockExam);
-          setQuestions(mockExamQuestions.items);
-          setTasks(mockExamTasks.items);
+          // Получаем задания экзамена
+          const tasksData = await examApi.getTasks(examInfo.examId);
+          setTasks(tasksData.items);
           
+          // Загружаем варианты ответов для всех вопросов
           const answersMap: Record<string, any[]> = {};
-          for (const question of mockExamQuestions.items) {
-            answersMap[question.questId] = mockQuestAnswers.items;
+          for (const question of questionsData.items) {
+            try {
+              const answersData = await questApi.getAnswers(question.questId);
+              answersMap[question.questId] = answersData.items;
+            } catch (err) {
+              console.error(`Failed to fetch answers for question ${question.questId}:`, err);
+              answersMap[question.questId] = [];
+            }
           }
           setQuestionAnswers(answersMap);
-          
-          setLoading(false);
-        }, 500);
+        }
         
+        // Получаем названия курса и модуля для хлебных крошек
+        try {
+          const courseTree = await courseApi.getTree(courseSlug, isAuth);
+          setCourseName(courseTree.name);
+          const moduleData = await moduleApi.getModule(moduleSlug);
+          setModuleName(moduleData.name);
+        } catch (err) {
+          console.error("Error fetching course/module names:", err);
+        }
+        
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching exam data:", err);
         setError("Не удалось загрузить экзамен");
@@ -106,22 +113,22 @@ export default function ExamPage() {
       }
     };
 
-    if (!isAuth) {
+    if (isAuth) {
       fetchExamData();
     } else {
       router.push("/login");
     }
-  }, [moduleSlug, isAuth, router]);
+  }, [moduleSlug, courseSlug, isAuth, router]);
 
-  // Проверка ответа на вопрос
+  // Проверка ответа на вопрос через API
   const checkAnswer = async (questionId: string, answerId: string): Promise<boolean> => {
-    // Здесь будет реальная проверка через API
-    // const response = await questApi.check(questionId, { answerId }, true);
-    // return response.correct;
-    
-    // Мок - всегда правильный ответ для теста
-    // Для реального использования нужно заменить на логику проверки
-    return mockQuestCheckResponse.correct;
+    try {
+      const response = await questApi.check(questionId, { answerId }, true);
+      return response.correct;
+    } catch (err) {
+      console.error("Error checking answer:", err);
+      return false;
+    }
   };
 
   // Обработка ответа на вопрос
@@ -133,20 +140,19 @@ export default function ExamPage() {
     const currentQuestion = questions[currentQuestionIndex];
     const isCorrect = await checkAnswer(currentQuestion.questId, selectedAnswer);
 
-    console.log(isCorrect)
     // Сохраняем ответ с результатом
-    setAnswers({
+    const updatedAnswers = {
       ...answers,
       [currentQuestion.questId]: {
         answerId: selectedAnswer,
         isCorrect: isCorrect
       },
-    });
-    
+    };
+    setAnswers(updatedAnswers);
     setSelectedAnswer(null);
     
     // Проверяем, есть ли уже неправильные ответы
-    const hasIncorrect = Object.values(answers).some(a => !a.isCorrect) || !isCorrect;
+    const hasIncorrect = Object.values(updatedAnswers).some(a => !a.isCorrect);
     
     if (hasIncorrect) {
       // Если есть неправильный ответ, показываем диалог пересдачи
@@ -182,7 +188,6 @@ export default function ExamPage() {
     setCurrentSection('questions');
     setTaskResults({});
     setShowRetryDialog(false);
-    setFailed(false);
     setError(null);
   };
 
@@ -199,21 +204,19 @@ export default function ExamPage() {
     try {
       setSubmitting(true);
       
-      setTimeout(() => {
-        setResult({
-          completed: mockExamCompleteResponse.completed,
-          firstCompletion: mockExamCompleteResponse.firstCompletion,
-          xpGranted: mockExamCompleteResponse.xpGranted,
-          coinGranted: mockExamCompleteResponse.coinGranted,
-          questionsDone: Object.keys(answers).length,
-          questionsTotal: questions.length,
-          tasksDone: tasks.filter(t => taskResults[t.taskId]?.completed).length,
-          tasksTotal: tasks.length,
-        });
-        setCompleted(true);
-        setSubmitting(false);
-      }, 500);
-      
+      const response = await examApi.complete(exam.examId);
+      setResult({
+        completed: response.completed,
+        firstCompletion: response.firstCompletion,
+        xpGranted: response.xpGranted,
+        coinGranted: response.coinGranted,
+        questionsDone: response.questionsDone,
+        questionsTotal: response.questionsTotal,
+        tasksDone: response.tasksDone,
+        tasksTotal: response.tasksTotal,
+      });
+      setCompleted(true);
+      setSubmitting(false);
     } catch (err) {
       console.error("Error completing exam:", err);
       setError("Не удалось завершить экзамен");
@@ -228,7 +231,7 @@ export default function ExamPage() {
     { label: "Экзамен" },
   ];
 
-  if (isAuth) {
+  if (!isAuth) {
     return null;
   }
 
@@ -310,8 +313,8 @@ export default function ExamPage() {
       <Container>
         <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
         
-        <div className=" py-20">
-          <div className=" text-center">
+        <div className="py-20">
+          <div className="text-center">
             <div className="mb-6">
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -501,13 +504,15 @@ export default function ExamPage() {
         </div>
         
         <div className="flex gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentSection('questions')}
-            className="flex-1"
-          >
-            ← К вопросам
-          </Button>
+          {questions.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setCurrentSection('questions')}
+              className="flex-1"
+            >
+              ← К вопросам
+            </Button>
+          )}
           <Button
             onClick={completeExam}
             disabled={submitting || !allTasksCompleted}

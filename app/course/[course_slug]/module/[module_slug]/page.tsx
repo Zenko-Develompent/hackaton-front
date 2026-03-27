@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { BreadcrumbNavigation } from "@/widgets/BreadcrumbNavigation ";
 import { Container } from "@/widgets/container/Container";
 import { courseApi } from "@/entities/course/api/course.api";
-import type { CourseTree, Course } from "@/entities/course/model/types";
-import { mockCourseTree, mockCourses } from "@/entities/mockData";
+import { moduleApi } from "@/entities/module/api/module.api";
 import { CoursesWrapper } from "@/widgets/Courses/CoursesWrapper";
 import { CourseCard } from "@/widgets/Courses/CourseCard";
 import { useAuth } from "@/features/auth/useAuth";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import type { CourseTree, Course } from "@/entities/course/model/types";
+import type { LessonShort } from "@/entities/module/model/types";
 
 export default function ModulePage() {
   const params = useParams();
@@ -22,8 +23,14 @@ export default function ModulePage() {
   const moduleSlug = params.module_slug as string;
 
   const [courseTree, setCourseTree] = useState<CourseTree | null>(null);
+  const [lessons, setLessons] = useState<LessonShort[]>([]);
+  const [examId, setExamId] = useState<string | null>(null);
+  const [courseName, setCourseName] = useState<string>("");
+  const [moduleName, setModuleName] = useState<string>("");
+  const [moduleDescription, setModuleDescription] = useState<string>("");
   const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lessonsLoading, setLessonsLoading] = useState(true);
   const [recommendedLoading, setRecommendedLoading] = useState(true);
   const [recommendedError, setRecommendedError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +46,9 @@ export default function ModulePage() {
       ? courseTree?.modules[currentModuleIndex]
       : null;
 
+  // Проверяем, доступен ли текущий модуль
+  const isModuleUnlocked = currentModule?.unlocked !== false;
+
   // Находим предыдущий и следующий модули
   const prevModule =
     currentModuleIndex !== undefined && currentModuleIndex > 0
@@ -52,7 +62,7 @@ export default function ModulePage() {
       ? courseTree?.modules[currentModuleIndex + 1]
       : null;
 
-  // Загрузка структуры курса
+  // Загрузка структуры курса (для навигации между модулями)
   useEffect(() => {
     const fetchCourseTree = async () => {
       if (!courseSlug) return;
@@ -60,11 +70,19 @@ export default function ModulePage() {
       try {
         setLoading(true);
         setError(null);
-
-        setTimeout(() => {
-          setCourseTree(mockCourseTree);
-          setLoading(false);
-        }, 500);
+        
+        const data = await courseApi.getTree(courseSlug, isAuth);
+        setCourseTree(data);
+        setCourseName(data.name);
+        
+        // Находим текущий модуль в дереве
+        const module = data.modules.find(m => m.moduleId === moduleSlug);
+        if (module) {
+          setModuleName(module.name);
+          setExamId(module.examId);
+        }
+        
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching course tree:", err);
         setError("Не удалось загрузить структуру курса");
@@ -73,21 +91,49 @@ export default function ModulePage() {
     };
 
     fetchCourseTree();
-  }, [courseSlug]);
+  }, [courseSlug, moduleSlug, isAuth]);
+
+  // Загрузка уроков модуля
+  useEffect(() => {
+    const fetchLessons = async () => {
+      if (!moduleSlug) return;
+
+      try {
+        setLessonsLoading(true);
+        
+        const data = await moduleApi.getLessons(moduleSlug, isAuth);
+        setLessons(data.items);
+        
+        // Также получаем детальную информацию о модуле для описания
+        try {
+          const moduleData = await moduleApi.getModule(moduleSlug);
+          setModuleDescription(moduleData.description);
+        } catch (err) {
+          console.error("Error fetching module details:", err);
+        }
+        
+        setLessonsLoading(false);
+      } catch (err) {
+        console.error("Error fetching lessons:", err);
+        setLessonsLoading(false);
+      }
+    };
+
+    fetchLessons();
+  }, [moduleSlug, isAuth]);
 
   // Загрузка рекомендуемых курсов
   const fetchRecommendedCourses = async () => {
     try {
       setRecommendedLoading(true);
       setRecommendedError(false);
-
-      setTimeout(() => {
-        const filteredCourses = mockCourses.items.filter(
-          (course) => course.courseId !== courseSlug,
-        );
-        setRecommendedCourses(filteredCourses.slice(0, 4));
-        setRecommendedLoading(false);
-      }, 300);
+      
+      const response = await courseApi.getCourses(0, 4);
+      const filteredCourses = response.items.filter(
+        (course) => course.courseId !== courseSlug
+      );
+      setRecommendedCourses(filteredCourses.slice(0, 4));
+      setRecommendedLoading(false);
     } catch (err) {
       console.error("Error fetching recommended courses:", err);
       setRecommendedError(true);
@@ -99,12 +145,23 @@ export default function ModulePage() {
     fetchRecommendedCourses();
   }, [courseSlug]);
 
-  // Получаем первый урок модуля
-  const getFirstLessonUrl = () => {
-    if (!currentModule || currentModule.lessons.length === 0) return null;
+  // Получаем первый доступный урок модуля
+  const getFirstAvailableLessonUrl = () => {
+    if (!lessons || lessons.length === 0) return null;
+    
+    // Ищем первый доступный урок
+    for (const lesson of lessons) {
+      if (lesson.unlocked !== false) {
+        return `/course/${courseSlug}/module/${moduleSlug}/lesson/${lesson.lessonId}`;
+      }
+    }
+    return null;
+  };
 
-    const firstLesson = currentModule.lessons[0];
-    return `/course/${courseSlug}/module/${moduleSlug}/lesson/${firstLesson.lessonId}`;
+  // Проверяем, есть ли доступные уроки
+  const hasAvailableLessons = () => {
+    if (!lessons) return false;
+    return lessons.some(lesson => lesson.unlocked !== false);
   };
 
   // Обработчик кнопки "Начать модуль"
@@ -114,9 +171,15 @@ export default function ModulePage() {
       return;
     }
 
-    const firstLessonUrl = getFirstLessonUrl();
-    if (firstLessonUrl) {
-      router.push(firstLessonUrl);
+    if (!isModuleUnlocked) {
+      // Показываем уведомление о недоступности модуля
+      setError("Этот модуль пока недоступен. Пройдите предыдущие модули.");
+      return;
+    }
+
+    const firstAvailableLessonUrl = getFirstAvailableLessonUrl();
+    if (firstAvailableLessonUrl) {
+      router.push(firstAvailableLessonUrl);
     }
   };
 
@@ -135,8 +198,8 @@ export default function ModulePage() {
 
   // Формируем хлебные крошки
   const breadcrumbItems = [
-    { label: courseTree?.name || "Загрузка...", href: `/course/${courseSlug}` },
-    { label: currentModule?.name || "Загрузка..." },
+    { label: courseName || "Загрузка...", href: `/course/${courseSlug}` },
+    { label: moduleName || "Загрузка..." },
   ];
 
   // Обработчики для карточек курсов
@@ -156,7 +219,9 @@ export default function ModulePage() {
     fetchRecommendedCourses();
   };
 
-  if (loading) {
+  const isLoading = loading || lessonsLoading;
+
+  if (isLoading) {
     return (
       <Container>
         <div className="space-y-6">
@@ -193,29 +258,42 @@ export default function ModulePage() {
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
 
       {/* Hero секция */}
-      <div className="flex flex-col items-start mt-5 gap-10 rounded-[40px] p-5 bg-primary text-white text-[20px]">
+      <div className={`flex flex-col items-start mt-5 gap-10 rounded-[40px] p-5 text-white text-[20px] ${
+        isModuleUnlocked ? "bg-primary" : "bg-gray-500"
+      }`}>
         <div>
           <span className="text-[24px] opacity-60">
             Модуль{" "}
             {currentModuleIndex !== undefined ? currentModuleIndex + 1 : ""}
+            {!isModuleUnlocked && " (заблокирован)"}
           </span>
           <h1 className="text-[40px] leading-none font-semibold">
-            {currentModule.name}
+            {moduleName}
           </h1>
         </div>
         <div className="flex flex-col gap-2">
           <span className="opacity-60">Описание</span>
           <p className="leading-none">
-            {mockCourses.items.find((c) => c.courseId === courseSlug)
-              ?.description || "Описание модуля будет добавлено позже"}
+            {moduleDescription || "Описание модуля будет добавлено позже"}
           </p>
         </div>
         <Button
           size="lg"
-          className="bg-white text-primary font-normal"
+          className={`font-normal ${
+            isModuleUnlocked 
+              ? "bg-white text-primary" 
+              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+          }`}
           onClick={handleStartModule}
+          disabled={!isModuleUnlocked || lessons.length === 0 || !hasAvailableLessons()}
         >
-          {isAuth ? "Начать модуль" : "Войти для обучения"}
+          {!isAuth 
+            ? "Войти для обучения" 
+            : !isModuleUnlocked 
+              ? "Модуль заблокирован" 
+              : !hasAvailableLessons() 
+                ? "Нет доступных уроков" 
+                : "Начать модуль"}
         </Button>
       </div>
 
@@ -224,69 +302,83 @@ export default function ModulePage() {
         <div>
           <h2 className="font-semibold text-2xl mb-2">Уроки модуля</h2>
           <p className="text-gray-600">
-            {currentModule.lessons.length} уроков
-            {currentModule.examId && ", итоговый экзамен"}
+            {lessons.length} уроков
+            {examId && ", итоговый экзамен"}
           </p>
         </div>
 
         {/* Список уроков */}
         <div className="space-y-5 mb-20">
           <div className="border rounded-[40px] overflow-hidden">
-            {/* Список уроков */}
             <div className="divide-y">
-              {currentModule.lessons.map((lesson, lessonIndex) => (
-                <div
-                  key={lesson.lessonId}
-                  className="px-5 py-4 hover:bg-gray-50 transition-colors"
-                >
-                  {isAuth ? (
-                    <Link
-                      href={`/course/${courseSlug}/module/${moduleSlug}/lesson/${lesson.lessonId}`}
-                      className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
-                    >
-                      <span className="font-medium">
-                        Урок {lessonIndex + 1}.
-                      </span>
-                      <span>{lesson.name}</span>
-                    </Link>
-                  ) : (
-                    <span
-                      className="text-gray-700 cursor-pointer hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
-                      onClick={() => router.push("/login")}
-                    >
-                      <span className="font-medium">
-                        Урок {lessonIndex + 1}.
-                      </span>
-                      <span>{lesson.name}</span>
-                    </span>
-                  )}
-                </div>
-              ))}
+              {lessons.map((lesson, lessonIndex) => {
+                const isLessonUnlocked = lesson.unlocked !== false && isModuleUnlocked;
+                
+                return (
+                  <div
+                    key={lesson.lessonId}
+                    className={`px-5 py-4 transition-colors ${
+                      isLessonUnlocked ? "hover:bg-gray-50" : "opacity-60"
+                    }`}
+                  >
+                    {isAuth && isLessonUnlocked ? (
+                      <Link
+                        href={`/course/${courseSlug}/module/${moduleSlug}/lesson/${lesson.lessonId}`}
+                        className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
+                      >
+                        <span className="font-medium">
+                          Урок {lessonIndex + 1}.
+                        </span>
+                        <span>{lesson.name}</span>
+                        {lesson.quizId && (
+                          <span className="text-xs text-gray-400 ml-2">+ Тест</span>
+                        )}
+                        {lesson.taskId && (
+                          <span className="text-xs text-gray-400 ml-2">+ Задание</span>
+                        )}
+                      </Link>
+                    ) : (
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <span className="font-medium">
+                          Урок {lessonIndex + 1}.
+                        </span>
+                        <span>{lesson.name}</span>
+                        {!isLessonUnlocked && (
+                          <Lock className="w-4 h-4 text-gray-400 ml-2" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Экзамен модуля */}
-              {currentModule.examId && (
-                <div className="px-5 py-4 hover:bg-gray-50 transition-colors border-t border-gray-100">
-                  {isAuth ? (
+              {examId && (
+                <div className={`px-5 py-4 transition-colors border-t border-gray-100 ${
+                  isModuleUnlocked ? "hover:bg-gray-50" : ""
+                }`}>
+                  {isAuth && isModuleUnlocked ? (
                     <Link
-                      href={`/course/${courseSlug}/module/${moduleSlug}/exam/${currentModule.examId}`}
+                      href={`/course/${courseSlug}/module/${moduleSlug}/exam/${examId}`}
                       className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
                     >
                       <span className="font-medium">Итоговый экзамен</span>
                     </Link>
                   ) : (
-                    <span
-                      className="text-gray-700 cursor-pointer hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
-                      onClick={() => router.push("/login")}
-                    >
+                    <div className="flex items-center gap-2 text-gray-700">
                       <span className="font-medium">Итоговый экзамен</span>
-                    </span>
+                      {!isModuleUnlocked && (
+                        <Lock className="w-4 h-4 text-gray-400" />
+                      )}
+                    </div>
                   )}
                 </div>
               )}
             </div>
           </div>
+          
           {/* Навигация между модулями */}
-          <div className="flex justify-between gap-4 mb-20">
+          <div className="flex justify-between gap-4">
             <Button
               variant="outline"
               size="lg"
@@ -294,7 +386,7 @@ export default function ModulePage() {
               disabled={!prevModule}
               className="flex-1 text-[16px]"
             >
-              <ChevronLeft/>
+              <ChevronLeft className="w-5 h-5" />
               {prevModule
                 ? `Предыдущий: ${prevModule.name}`
                 : "Предыдущий модуль"}
@@ -308,8 +400,8 @@ export default function ModulePage() {
             >
               {nextModule
                 ? `Следующий: ${nextModule.name}`
-                : "Следующий модуль"}{" "}
-              <ChevronRight/>
+                : "Следующий модуль"}
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
         </div>

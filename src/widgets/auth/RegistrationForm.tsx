@@ -28,7 +28,7 @@ export const RegisterForm = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Валидация
     if (!username.trim()) {
       showAlert({
@@ -118,7 +118,7 @@ export const RegisterForm = () => {
         autoClose: 3000,
       });
 
-
+      router.push("/");
     } catch (err: any) {
       if (err.message?.includes("username already exists")) {
         showAlert({
@@ -146,12 +146,33 @@ export const RegisterForm = () => {
       <div className="h-screen flex flex-col justify-center items-center text-[16px]">
         <form
           onSubmit={handleSubmit}
-          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4 bg-white"
+          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4 bg-white shadow-xl"
         >
           <h1 className="font-semibold text-[28px]">Создайте аккаунт</h1>
           <p className="text-gray-600">Заполните данные для регистрации</p>
-          
+
           <Field>
+            <ButtonGroup className="w-full">
+              <Button
+                className="flex-1 text-[16px] rounded-[16px]"
+                type="button"
+                size="lg"
+                variant={userType === "student" ? "default" : "outline"}
+                onClick={() => setUserType("student")}
+              >
+                Ребенок
+              </Button>
+              <ButtonGroupSeparator />
+              <Button
+                className="flex-1 text-[16px] rounded-[16px]"
+                type="button"
+                size="lg"
+                variant={userType === "parent" ? "default" : "outline"}
+                onClick={() => setUserType("parent")}
+              >
+                Родитель
+              </Button>
+            </ButtonGroup>
             <FieldLabel>Имя пользователя</FieldLabel>
             <Input
               placeholder="Введите имя пользователя"
@@ -160,7 +181,7 @@ export const RegisterForm = () => {
               required
             />
           </Field>
-          
+
           <Field>
             <FieldLabel>Возраст</FieldLabel>
             <Input
@@ -173,7 +194,7 @@ export const RegisterForm = () => {
               required
             />
           </Field>
-          
+
           <Field>
             <FieldLabel>Пароль</FieldLabel>
             <Input
@@ -184,7 +205,7 @@ export const RegisterForm = () => {
               required
             />
           </Field>
-          
+
           <Field>
             <FieldLabel>Подтверждение пароля</FieldLabel>
             <Input
@@ -196,41 +217,19 @@ export const RegisterForm = () => {
             />
           </Field>
 
-          <ButtonGroup className="w-full">
-            <Button
-              className="flex-1 text-[16px]"
-              type="button"
-              size="lg"
-              variant={userType === "student" ? "default" : "outline"}
-              onClick={() => setUserType("student")}
-            >
-              Ребенок
-            </Button>
-            <ButtonGroupSeparator />
-            <Button
-              className="flex-1 text-[16px]"
-              type="button"
-              size="lg"
-              variant={userType === "parent" ? "default" : "outline"}
-              onClick={() => setUserType("parent")}
-            >
-              Родитель
-            </Button>
-          </ButtonGroup>
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={loading} 
+          <Button
+            type="submit"
+            className="w-full text-[16px]"
+            disabled={loading}
             size="lg"
           >
             {loading ? "Регистрация..." : "Зарегистрироваться"}
           </Button>
         </form>
-        
+
         <a
           href="/login"
-          className="font-medium text-black/60 text-center mt-3 hover:text-black"
+          className="font-medium  text-black/60 text-center mt-3 "
         >
           Уже есть аккаунт?{" "}
           <span className="text-black hover:underline">Войти</span>

@@ -14,6 +14,8 @@ export type UserProfile = {
   username: string;
   level: number;
   achievements: Achievement[];
+  xp?: number;
+  coins?: number;
 };
 
 export type Achievement = {

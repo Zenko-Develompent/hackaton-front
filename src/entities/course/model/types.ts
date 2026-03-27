@@ -33,6 +33,7 @@ export type CoursesResponse = {
 };
 
 export type CourseTree = {
+  description: string;
   courseId: string;
   name: string;
   modules: ModuleTree[];

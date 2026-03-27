@@ -12,6 +12,6 @@ export const questApi = {
 
   check: (questId: string, data: QuestCheckRequest, withAuth?: boolean) =>
     api().post<QuestCheckResponse>(`/quests/${questId}/check`, data, {
-      auth: withAuth,
+      auth: true,
     }),
 };

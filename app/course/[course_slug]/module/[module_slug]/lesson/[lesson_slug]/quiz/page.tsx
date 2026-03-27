@@ -12,13 +12,13 @@ import {
   ResultDisplay, 
   ProgressBar 
 } from "@/shared/ui";
-import { 
-  mockQuizStartResponse,
-  mockQuizAnswerResponse,
-  mockQuizCompleteResponse,
-  mockCourseTree,
-} from "@/entities/mockData";
+import { lessonApi } from "@/entities/lesson/api/lesson.api";
+import { quizApi } from "@/entities/quiz/api/quiz.api";
+import { questApi } from "@/entities/quest/api/quest.api";
+import { courseApi } from "@/entities/course/api/course.api";
+import { moduleApi } from "@/entities/module/api/module.api";
 import type { QuizStartResponse, QuizAnswerResponse, QuizCompleteResponse } from "@/entities/quiz/model/types";
+import type { LessonQuiz } from "@/entities/lesson/model/types";
 
 export default function QuizPage() {
   const params = useParams();
@@ -27,20 +27,21 @@ export default function QuizPage() {
   const moduleSlug = params.module_slug as string;
   const lessonSlug = params.lesson_slug as string;
 
-  const [quiz, setQuiz] = useState<{
-    quizId: string;
-    lessonId: string;
-    name: string;
-    description: string;
-    questionsCount: number;
-  } | null>(null);
+  const [quiz, setQuiz] = useState<LessonQuiz | null>(null);
   const [quizSession, setQuizSession] = useState<QuizStartResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [result, setResult] = useState<QuizCompleteResponse | null>(null);
+  const [result, setResult] = useState<{
+    completed: boolean;
+    firstCompletion: boolean;
+    xpGranted: number;
+    coinGranted: number;
+    totalQuestions: number;
+    correctAnswers: number;
+  } | null>(null);
   
   // Названия для хлебных крошек
   const [courseName, setCourseName] = useState<string>("");
@@ -49,7 +50,7 @@ export default function QuizPage() {
 
   const { isAuth } = useAuth();
 
-  // Загрузка данных квиза
+  // Загрузка данных квиза и названий
   useEffect(() => {
     const fetchQuizData = async () => {
       if (!lessonSlug) return;
@@ -58,28 +59,25 @@ export default function QuizPage() {
         setLoading(true);
         setError(null);
         
-        setTimeout(() => {
-          // Получаем названия из моков
-          const currentCourse = mockCourseTree;
-          const currentModule = currentCourse.modules.find(m => m.moduleId === moduleSlug);
-          const currentLesson = currentModule?.lessons.find(l => l.lessonId === lessonSlug);
-          
-          setCourseName(currentCourse.name);
-          setModuleName(currentModule?.name || "Загрузка...");
-          setLessonName(currentLesson?.name || "Загрузка...");
-          
-          // Мок информации о квизе
-          setQuiz({
-            quizId: "quiz-1-1",
-            lessonId: lessonSlug,
-            name: "Тест: История игр",
-            description: "Проверь свои знания об истории компьютерных игр",
-            questionsCount: 5,
-          });
-          
-          setLoading(false);
-        }, 500);
+        // Загружаем информацию о квизе
+        const quizData = await lessonApi.getQuiz(lessonSlug);
+        setQuiz(quizData);
         
+        // Загружаем названия для хлебных крошек
+        try {
+          const courseTree = await courseApi.getTree(courseSlug, isAuth);
+          setCourseName(courseTree.name);
+          
+          const moduleData = await moduleApi.getModule(moduleSlug);
+          setModuleName(moduleData.name);
+          
+          const lessonData = await lessonApi.getLesson(lessonSlug);
+          setLessonName(lessonData.name);
+        } catch (err) {
+          console.error("Error fetching names:", err);
+        }
+        
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching quiz data:", err);
         setError("Не удалось загрузить тест");
@@ -92,7 +90,7 @@ export default function QuizPage() {
     } else {
       router.push("/login");
     }
-  }, [lessonSlug, moduleSlug, isAuth, router]);
+  }, [lessonSlug, moduleSlug, courseSlug, isAuth, router]);
 
   // Старт квиза
   const startQuiz = async () => {
@@ -101,11 +99,9 @@ export default function QuizPage() {
     try {
       setLoading(true);
       
-      setTimeout(() => {
-        setQuizSession(mockQuizStartResponse);
-        setLoading(false);
-      }, 500);
-      
+      const response = await quizApi.start(quiz.quizId);
+      setQuizSession(response);
+      setLoading(false);
     } catch (err) {
       console.error("Error starting quiz:", err);
       setError("Не удалось начать тест");
@@ -119,33 +115,39 @@ export default function QuizPage() {
 
     setSubmitting(true);
     
-    setTimeout(() => {
-      const currentIndex = quizSession.question!.index;
-      const total = quizSession.question!.total;
-      const isLast = currentIndex === total;
+    try {
+      const response = await quizApi.answer(quiz.quizId, {
+        questionId: quizSession.question.questionId,
+        answerId: selectedAnswer,
+      });
       
-      if (isLast) {
-        // Последний вопрос - завершаем тест
-        setResult(mockQuizCompleteResponse);
+      if (response.completed) {
+        // Квиз завершен
+        setResult({
+          completed: true,
+          firstCompletion: true,
+          xpGranted: response.xpGranted,
+          coinGranted: response.coinGranted,
+          totalQuestions: quizSession.question?.total || 0,
+          correctAnswers: quizSession.question?.index || 0,
+        });
         setCompleted(true);
         setQuizSession(null);
       } else {
-        // Не последний вопрос - показываем следующий
-        const nextQuestion = {
-          ...mockQuizAnswerResponse.question!,
-          index: currentIndex + 1,
-          total: total,
-        };
-        
+        // Обновляем сессию с новым вопросом
         setQuizSession({
           completed: false,
-          question: nextQuestion,
+          question: response.question,
         });
       }
       
       setSelectedAnswer(null);
       setSubmitting(false);
-    }, 500);
+    } catch (err) {
+      console.error("Error submitting answer:", err);
+      setError("Ошибка при отправке ответа");
+      setSubmitting(false);
+    }
   };
 
   // Хлебные крошки
@@ -250,7 +252,7 @@ export default function QuizPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Награда:</span>
                 <span className="font-semibold text-green-600">
-                  +{mockQuizCompleteResponse.xpGranted} XP + {mockQuizCompleteResponse.coinGranted} монет
+                  +{quiz.questionsCount * 10} XP
                 </span>
               </div>
               <div className="flex justify-between">

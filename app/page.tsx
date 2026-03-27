@@ -9,7 +9,7 @@ import { CoursesWrapper } from "@/widgets/Courses/CoursesWrapper";
 import { useRouter } from "next/navigation";
 import { courseApi } from "@/entities/course/api/course.api";
 import type { Course } from "@/entities/course/model/types";
-import { mockCourses } from "@/entities/mockData";
+
 
 
 
@@ -39,9 +39,9 @@ export default function Home() {
       
 
       const response = await courseApi.getCourses(0, 4);
-      console.log(response)
+      console.log(response.items)
       setCourses(response.items);
-      
+      setLoading(false);
       
     } catch (err) {
       console.error("Error fetching courses:", err);
@@ -118,6 +118,7 @@ export default function Home() {
               onStartLearning={handleStartLearning}
               onDetails={handleDetails}
             />
+            
           ))}
         </CoursesWrapper>
       </div>

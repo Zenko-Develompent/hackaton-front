@@ -7,7 +7,7 @@ import { CodeEditor } from "./CodeEditor";
 import { CodeOutput } from "./CodeOutput";
 import { TaskStatus } from "./TaskStatus";
 import { taskApi } from "@/entities/task/api/task.api";
-import { mockTaskRunResponse, mockTaskCompleteResponse } from "@/entities/mockData";
+
 
 interface TaskRunnerProps {
   taskId: string;
@@ -37,26 +37,15 @@ export const TaskRunner = ({
     
     setRunning(true);
     try {
-      // Используем мок
-      setTimeout(() => {
-        const response = mockTaskRunResponse;
-        setResult(response);
-        
-        if (response.correct && !completed) {
-          setCompleted(true);
-          onComplete?.(mockTaskCompleteResponse);
-        }
-        setRunning(false);
-      }, 500);
       
-      // Реальный API:
-      // const response = await taskApi.run(taskId, { language, code });
-      // setResult(response);
-      // if (response.correct && !completed) {
-      //   const completeResponse = await taskApi.complete(taskId);
-      //   setCompleted(true);
-      //   onComplete?.(completeResponse);
-      // }
+
+      const response = await taskApi.run(taskId, { language, code });
+      setResult(response);
+      if (response.correct && !completed) {
+        const completeResponse = await taskApi.complete(taskId);
+        setCompleted(true);
+        onComplete?.(completeResponse);
+      }
     } catch (error) {
       setResult({
         status: 'error',

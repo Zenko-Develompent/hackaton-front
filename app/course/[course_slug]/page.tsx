@@ -1,4 +1,4 @@
-// app/course/[course_slug]/module/[module_slug]/lesson/[lesson_slug]/components/LessonContent.tsx
+// app/course/[course_slug]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -9,10 +9,10 @@ import { BreadcrumbNavigation } from "@/widgets/BreadcrumbNavigation ";
 import { Container } from "@/widgets/container/Container";
 import { courseApi } from "@/entities/course/api/course.api";
 import type { CourseTree, Course } from "@/entities/course/model/types";
-import { mockCourseTree, mockCourses } from "@/entities/mockData";
 import { CoursesWrapper } from "@/widgets/Courses/CoursesWrapper";
 import { CourseCard } from "@/widgets/Courses/CourseCard";
 import { useAuth } from "@/features/auth/useAuth";
+import { Lock } from "lucide-react";
 
 export default function CoursePage() {
   const params = useParams();
@@ -28,7 +28,7 @@ export default function CoursePage() {
 
   const { isAuth } = useAuth();
 
-  // Загрузка структуры курса
+  // Загрузка структуры курса с учетом авторизации
   useEffect(() => {
     const fetchCourseTree = async () => {
       if (!courseSlug) return;
@@ -37,9 +37,9 @@ export default function CoursePage() {
         setLoading(true);
         setError(null);
 
-        const response = await courseApi.getTree(courseSlug);
+        const response = await courseApi.getTree(courseSlug, isAuth);
         setCourseTree(response);
-
+        setLoading(false);
         
       } catch (err) {
         console.error("Error fetching course tree:", err);
@@ -49,7 +49,7 @@ export default function CoursePage() {
     };
 
     fetchCourseTree();
-  }, [courseSlug]);
+  }, [courseSlug, isAuth]);
 
   // Загрузка рекомендуемых курсов
   const fetchRecommendedCourses = async () => {
@@ -57,13 +57,12 @@ export default function CoursePage() {
       setRecommendedLoading(true);
       setRecommendedError(false);
 
-
       const response = await courseApi.getCourses(0, 4);
       const filteredCourses = response.items.filter(
         (course) => course.courseId !== courseSlug
       );
       setRecommendedCourses(filteredCourses.slice(0, 4));
-
+      setRecommendedLoading(false);
      
     } catch (err) {
       console.error("Error fetching recommended courses:", err);
@@ -76,15 +75,28 @@ export default function CoursePage() {
     fetchRecommendedCourses();
   }, [courseSlug]);
 
-  // Получаем первый урок курса
-  const getFirstLessonUrl = () => {
+  // Получаем первый доступный урок курса
+  const getFirstAvailableLessonUrl = () => {
     if (!courseTree || courseTree.modules.length === 0) return null;
 
-    const firstModule = courseTree.modules[0];
-    if (firstModule.lessons.length === 0) return null;
+    for (const module of courseTree.modules) {
+      // Проверяем доступен ли модуль
+      if (module.unlocked !== false) {
+        for (const lesson of module.lessons) {
+          // Проверяем доступен ли урок
+          if (lesson.unlocked !== false) {
+            return `/course/${courseSlug}/module/${module.moduleId}/lesson/${lesson.lessonId}`;
+          }
+        }
+      }
+    }
+    return null;
+  };
 
-    const firstLesson = firstModule.lessons[0];
-    return `/course/${courseSlug}/module/${firstModule.moduleId}/lesson/${firstLesson.lessonId}`;
+  // Проверяем, есть ли доступные модули
+  const hasAvailableModules = () => {
+    if (!courseTree) return false;
+    return courseTree.modules.some(module => module.unlocked !== false);
   };
 
   // Обработчик кнопки "Начать обучение"
@@ -94,9 +106,9 @@ export default function CoursePage() {
       return;
     }
 
-    const firstLessonUrl = getFirstLessonUrl();
-    if (firstLessonUrl) {
-      router.push(firstLessonUrl);
+    const firstAvailableLessonUrl = getFirstAvailableLessonUrl();
+    if (firstAvailableLessonUrl) {
+      router.push(firstAvailableLessonUrl);
     }
   };
 
@@ -120,14 +132,6 @@ export default function CoursePage() {
 
   const handleRetryRecommended = () => {
     fetchRecommendedCourses();
-  };
-
-  // Обработчик клика на урок
-  const handleLessonClick = (e: React.MouseEvent, url: string) => {
-    if (!isAuth) {
-      e.preventDefault();
-      router.push("/login");
-    }
   };
 
   if (loading) {
@@ -174,19 +178,23 @@ export default function CoursePage() {
             {courseTree.name}
           </h1>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
           <span className="opacity-60">Описание</span>
           <p className="leading-none">
-            {mockCourses.items.find((c) => c.courseId === courseSlug)
-              ?.description || "Описание курса будет добавлено позже"}
+            {courseTree.description || "Описание курса будет добавлено позже"}
           </p>
         </div>
         <Button
           size="lg"
           className="bg-white text-[#6737FF] font-normal"
           onClick={handleStartLearning}
+          disabled={!hasAvailableModules()}
         >
-          {isAuth ? "Начать обучение" : "Войти для обучения"}
+          {!isAuth 
+            ? "Войти для обучения" 
+            : !hasAvailableModules() 
+              ? "Все модули заблокированы" 
+              : "Начать обучение"}
         </Button>
       </div>
 
@@ -207,82 +215,128 @@ export default function CoursePage() {
 
         {/* Список модулей */}
         <div className="space-y-5 mb-20">
-          {courseTree.modules.map((module, index) => (
-            <div
-              key={module.moduleId}
-              className="border rounded-[40px] overflow-hidden border-primary "
-            >
-              {/* Заголовок модуля */}
-              <div className="px-5 py-5 border-b bg-primary text-white">
-                {isAuth ? (
-                  <Link
-                    href={`/course/${courseSlug}/module/${module.moduleId}`}
-                    className="text-[24px] font-medium hover:text-blue-600 hover:underline transition-colors"
-                  >
-                    Модуль {index + 1}. {module.name}
-                  </Link>
-                ) : (
-                  <span
-                    className="text-lg font-medium cursor-pointer hover:underline transition-colors"
-                    onClick={() => router.push("/login")}
-                  >
-                    Модуль {index + 1}. {module.name}
-                  </span>
-                )}
-              </div>
+          {courseTree.modules.map((module, index) => {
+            const isModuleUnlocked = module.unlocked !== false;
+            const moduleLink = isModuleUnlocked 
+              ? `/course/${courseSlug}/module/${module.moduleId}`
+              : undefined;
+            
+            return (
+              <div
+                key={module.moduleId}
+                className={`border rounded-[40px] overflow-hidden ${
+                  !isModuleUnlocked ? "opacity-60" : ""
+                } ${isModuleUnlocked ? "border-primary" : "border-gray-200"}`}
+              >
+                {/* Заголовок модуля */}
+                <div className={`px-5 py-5 border-b ${
+                  isModuleUnlocked 
+                    ? "bg-primary text-white" 
+                    : "bg-gray-100 text-gray-500"
+                }`}>
+                  {isAuth && isModuleUnlocked ? (
+                    <Link
+                      href={moduleLink!}
+                      className="text-[24px] font-medium hover:underline transition-colors flex items-center justify-between"
+                    >
+                      <span>Модуль {index + 1}. {module.name}</span>
+                      {!isModuleUnlocked && <Lock className="w-5 h-5" />}
+                    </Link>
+                  ) : (
+                    <span
+                      className={`text-[24px] font-medium flex items-center justify-between ${
+                        !isModuleUnlocked ? "cursor-not-allowed" : "cursor-pointer"
+                      }`}
+                      onClick={() => {
+                        if (isAuth && isModuleUnlocked) {
+                          router.push(moduleLink!);
+                        } else if (!isAuth) {
+                          router.push("/login");
+                        }
+                      }}
+                    >
+                      <span>Модуль {index + 1}. {module.name}</span>
+                      {!isModuleUnlocked && <Lock className="w-5 h-5" />}
+                    </span>
+                  )}
+                </div>
 
-              {/* Список уроков */}
-              <div className="divide-y">
-                {module.lessons.map((lesson, lessonIndex) => (
-                  <div
-                    key={lesson.lessonId}
-                    className="px-5 py-3 pl-10 hover:bg-gray-50 transition-colors"
-                  >
-                    {isAuth ? (
-                      <Link
-                        href={`/course/${courseSlug}/module/${module.moduleId}/lesson/${lesson.lessonId}`}
-                        className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
+                {/* Список уроков */}
+                <div className="divide-y">
+                  {module.lessons.map((lesson, lessonIndex) => {
+                    const isLessonUnlocked = lesson.unlocked !== false && isModuleUnlocked;
+                    const lessonLink = isLessonUnlocked 
+                      ? `/course/${courseSlug}/module/${module.moduleId}/lesson/${lesson.lessonId}`
+                      : undefined;
+                    
+                    return (
+                      <div
+                        key={lesson.lessonId}
+                        className={`px-5 py-3 pl-10 hover:bg-gray-50 transition-colors ${
+                          !isLessonUnlocked ? "opacity-50" : ""
+                        }`}
                       >
-                        <span>
-                          Урок {lessonIndex + 1}. {lesson.name}
-                        </span>
-                      </Link>
-                    ) : (
-                      <span
-                        className="text-gray-700 cursor-pointer hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
-                        onClick={() => router.push("/login")}
-                      >
-                        <span>
-                          Урок {lessonIndex + 1}. {lesson.name}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-                ))}
+                        {isAuth && isLessonUnlocked ? (
+                          <Link
+                            href={lessonLink!}
+                            className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
+                          >
+                            <span>Урок {lessonIndex + 1}. {lesson.name}</span>
+                          </Link>
+                        ) : (
+                          <span
+                            className={`text-gray-700 flex items-center gap-2 ${
+                              isAuth && !isLessonUnlocked
+                                ? "cursor-not-allowed"
+                                : "cursor-pointer"
+                            }`}
+                            onClick={() => {
+                              if (!isAuth) {
+                                router.push("/login");
+                              } else if (isLessonUnlocked) {
+                                router.push(lessonLink!);
+                              }
+                            }}
+                          >
+                            <span>Урок {lessonIndex + 1}. {lesson.name}</span>
+                            {!isLessonUnlocked && <Lock className="w-4 h-4 text-gray-400" />}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
 
-                {/* Экзамен модуля */}
-                {module.examId && (
-                  <div className="px-10 py-3 hover:bg-gray-50 transition-colors border-t border-gray-100">
-                    {isAuth ? (
-                      <Link
-                        href={`/course/${courseSlug}/module/${module.moduleId}/exam/`}
-                        className="text-primary hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
-                      >
-                        <span className="font-medium">Итоговый экзамен</span>
-                      </Link>
-                    ) : (
-                      <span
-                        className="text-primary cursor-pointer hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
-                        onClick={() => router.push("/login")}
-                      >
-                        <span className="font-medium">Итоговый экзамен</span>
-                      </span>
-                    )}
-                  </div>
-                )}
+                  {/* Экзамен модуля */}
+                  {module.examId && (
+                    <div className="px-10 py-3 hover:bg-gray-50 transition-colors border-t border-gray-100">
+                      {isAuth && isModuleUnlocked ? (
+                        <Link
+                          href={`/course/${courseSlug}/module/${module.moduleId}/exam`}
+                          className="text-primary hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
+                        >
+                          <span className="font-medium">Итоговый экзамен</span>
+                        </Link>
+                      ) : (
+                        <span
+                          className={`text-primary flex items-center gap-2 ${
+                            !isAuth ? "cursor-pointer" : "cursor-not-allowed"
+                          }`}
+                          onClick={() => {
+                            if (!isAuth) {
+                              router.push("/login");
+                            }
+                          }}
+                        >
+                          <span className="font-medium">Итоговый экзамен</span>
+                          {!isModuleUnlocked && <Lock className="w-4 h-4" />}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

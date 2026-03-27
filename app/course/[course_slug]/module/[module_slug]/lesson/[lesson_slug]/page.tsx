@@ -1,7 +1,7 @@
 // app/course/[course_slug]/module/[module_slug]/lesson/[lesson_slug]/components/LessonContent.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbNavigation } from "@/widgets/BreadcrumbNavigation ";
@@ -9,19 +9,19 @@ import { Container } from "@/widgets/container/Container";
 import { CoursesWrapper } from "@/widgets/Courses/CoursesWrapper";
 import { CourseCard } from "@/widgets/Courses/CourseCard";
 import { useAuth } from "@/features/auth/useAuth";
-import { mockCourseTree, mockCourses, mockLessons } from "@/entities/mockData";
-import type { Lesson } from "@/entities/lesson/model/types";
-import type { CourseTree } from "@/entities/course/model/types";
-import type { Course } from "@/entities/course/model/types";
+import { courseApi } from "@/entities/course/api/course.api";
+import { lessonApi } from "@/entities/lesson/api/lesson.api";
+import { moduleApi } from "@/entities/module/api/module.api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github-dark.css";
-
-import CoinIconWhite from "@/shared/assets/icons/CoinVerticalWhite.svg";
-
-import { useRef } from "react";
 import hljs from "highlight.js";
+import CoinIconWhite from "@/shared/assets/icons/CoinVerticalWhite.svg";
+import { Lock } from "lucide-react";
+import type { CourseTree, Course } from "@/entities/course/model/types";
+import type { Lesson } from "@/entities/lesson/model/types";
+import type { LessonShort } from "@/entities/module/model/types";
 
 export default function LessonPage() {
   const params = useParams();
@@ -32,6 +32,7 @@ export default function LessonPage() {
 
   const [courseTree, setCourseTree] = useState<CourseTree | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [moduleLessons, setModuleLessons] = useState<LessonShort[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [lessonLoading, setLessonLoading] = useState(true);
@@ -41,7 +42,7 @@ export default function LessonPage() {
 
   const { isAuth } = useAuth();
 
-  // Находим текущий модуль, урок и индексы
+  // Находим текущий модуль и индексы
   const currentModuleIndex = courseTree?.modules.findIndex(
     (module) => module.moduleId === moduleSlug,
   );
@@ -50,26 +51,41 @@ export default function LessonPage() {
       ? courseTree?.modules[currentModuleIndex]
       : null;
 
-  const currentLessonIndex = currentModule?.lessons.findIndex(
+  // Проверяем доступность модуля
+  const isModuleUnlocked = currentModule?.unlocked !== false;
+
+  const currentLessonIndex = moduleLessons.findIndex(
     (lesson) => lesson.lessonId === lessonSlug,
   );
-  const currentLesson =
-    currentLessonIndex !== undefined && currentLessonIndex !== -1
-      ? currentModule?.lessons[currentLessonIndex]
-      : null;
 
-  // Находим предыдущий и следующий уроки
-  const prevLesson =
-    currentLessonIndex !== undefined && currentLessonIndex > 0
-      ? currentModule?.lessons[currentLessonIndex - 1]
-      : null;
-  const nextLesson =
-    currentLessonIndex !== undefined &&
-    currentLessonIndex !== -1 &&
-    currentModule &&
-    currentLessonIndex < currentModule.lessons.length - 1
-      ? currentModule?.lessons[currentLessonIndex + 1]
-      : null;
+  // Проверяем доступность текущего урока
+  const currentLessonData = moduleLessons[currentLessonIndex];
+  const isLessonUnlocked =
+    currentLessonData?.unlocked !== false && isModuleUnlocked;
+
+  // Находим предыдущий и следующий доступные уроки
+  const getPrevAvailableLesson = () => {
+    // Ищем предыдущий доступный урок в текущем модуле
+    for (let i = currentLessonIndex - 1; i >= 0; i--) {
+      if (moduleLessons[i]?.unlocked !== false && isModuleUnlocked) {
+        return moduleLessons[i];
+      }
+    }
+    return null;
+  };
+
+  const getNextAvailableLesson = () => {
+    // Ищем следующий доступный урок в текущем модуле
+    for (let i = currentLessonIndex + 1; i < moduleLessons.length; i++) {
+      if (moduleLessons[i]?.unlocked !== false && isModuleUnlocked) {
+        return moduleLessons[i];
+      }
+    }
+    return null;
+  };
+
+  const prevLesson = getPrevAvailableLesson();
+  const nextLesson = getNextAvailableLesson();
 
   // Находим предыдущий и следующий модули для навигации
   const prevModule =
@@ -93,10 +109,9 @@ export default function LessonPage() {
         setLoading(true);
         setError(null);
 
-        setTimeout(() => {
-          setCourseTree(mockCourseTree);
-          setLoading(false);
-        }, 500);
+        const data = await courseApi.getTree(courseSlug, isAuth);
+        setCourseTree(data);
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching course tree:", err);
         setError("Не удалось загрузить структуру курса");
@@ -105,7 +120,23 @@ export default function LessonPage() {
     };
 
     fetchCourseTree();
-  }, [courseSlug]);
+  }, [courseSlug, isAuth]);
+
+  // Загрузка уроков модуля
+  useEffect(() => {
+    const fetchModuleLessons = async () => {
+      if (!moduleSlug) return;
+
+      try {
+        const data = await moduleApi.getLessons(moduleSlug, isAuth);
+        setModuleLessons(data.items);
+      } catch (err) {
+        console.error("Error fetching module lessons:", err);
+      }
+    };
+
+    fetchModuleLessons();
+  }, [moduleSlug, isAuth]);
 
   // Загрузка урока
   useEffect(() => {
@@ -115,11 +146,9 @@ export default function LessonPage() {
       try {
         setLessonLoading(true);
 
-        setTimeout(() => {
-          const lessonData = mockLessons[0];
-          setLesson(lessonData || null);
-          setLessonLoading(false);
-        }, 300);
+        const data = await lessonApi.getLesson(lessonSlug);
+        setLesson(data);
+        setLessonLoading(false);
       } catch (err) {
         console.error("Error fetching lesson:", err);
         setLessonLoading(false);
@@ -135,13 +164,12 @@ export default function LessonPage() {
       setRecommendedLoading(true);
       setRecommendedError(false);
 
-      setTimeout(() => {
-        const filteredCourses = mockCourses.items.filter(
-          (course) => course.courseId !== courseSlug,
-        );
-        setRecommendedCourses(filteredCourses.slice(0, 4));
-        setRecommendedLoading(false);
-      }, 300);
+      const response = await courseApi.getCourses(0, 4);
+      const filteredCourses = response.items.filter(
+        (course) => course.courseId !== courseSlug,
+      );
+      setRecommendedCourses(filteredCourses.slice(0, 4));
+      setRecommendedLoading(false);
     } catch (err) {
       console.error("Error fetching recommended courses:", err);
       setRecommendedError(true);
@@ -160,7 +188,7 @@ export default function LessonPage() {
       label: currentModule?.name || "Загрузка...",
       href: `/course/${courseSlug}/module/${moduleSlug}`,
     },
-    { label: currentLesson?.name || "Загрузка..." },
+    { label: lesson?.name || "Загрузка..." },
   ];
 
   // Обработчики навигации
@@ -170,11 +198,18 @@ export default function LessonPage() {
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${prevLesson.lessonId}`,
       );
     } else if (prevModule) {
-      const lastLessonOfPrevModule =
-        prevModule.lessons[prevModule.lessons.length - 1];
-      router.push(
-        `/course/${courseSlug}/module/${prevModule.moduleId}/lesson/${lastLessonOfPrevModule.lessonId}`,
-      );
+      // Ищем последний доступный урок в предыдущем модуле
+      const lastAvailableLesson = prevModule.lessons
+        .slice()
+        .reverse()
+        .find((lesson) => lesson.unlocked !== false);
+      if (lastAvailableLesson) {
+        router.push(
+          `/course/${courseSlug}/module/${prevModule.moduleId}/lesson/${lastAvailableLesson.lessonId}`,
+        );
+      } else {
+        router.push(`/course/${courseSlug}/module/${prevModule.moduleId}`);
+      }
     }
   };
 
@@ -184,15 +219,22 @@ export default function LessonPage() {
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${nextLesson.lessonId}`,
       );
     } else if (nextModule) {
-      const firstLessonOfNextModule = nextModule.lessons[0];
-      router.push(
-        `/course/${courseSlug}/module/${nextModule.moduleId}/lesson/${firstLessonOfNextModule.lessonId}`,
+      // Ищем первый доступный урок в следующем модуле
+      const firstAvailableLesson = nextModule.lessons.find(
+        (lesson) => lesson.unlocked !== false,
       );
+      if (firstAvailableLesson) {
+        router.push(
+          `/course/${courseSlug}/module/${nextModule.moduleId}/lesson/${firstAvailableLesson.lessonId}`,
+        );
+      } else {
+        router.push(`/course/${courseSlug}/module/${nextModule.moduleId}`);
+      }
     }
   };
 
   const handleStartQuiz = () => {
-    if (lesson?.quizId) {
+    if (lesson?.quizId && isLessonUnlocked) {
       router.push(
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}/quiz`,
       );
@@ -200,7 +242,7 @@ export default function LessonPage() {
   };
 
   const handleStartTask = () => {
-    if (lesson?.taskId) {
+    if (lesson?.taskId && isLessonUnlocked) {
       router.push(
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}/task`,
       );
@@ -224,7 +266,39 @@ export default function LessonPage() {
     fetchRecommendedCourses();
   };
 
-  if (loading || lessonLoading) {
+  const isLoading = loading || lessonLoading;
+
+  // Если урок недоступен, показываем сообщение
+  if (!isLoading && !isLessonUnlocked) {
+    return (
+      <Container>
+        <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
+
+        <div className="flex flex-col items-center justify-center py-40 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+            <Lock className="w-10 h-10 text-gray-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Урок недоступен
+          </h1>
+          <p className="text-gray-600 mb-8 max-w-md">
+            {!isModuleUnlocked
+              ? "Этот модуль пока недоступен. Пройдите предыдущие модули, чтобы открыть его."
+              : "Этот урок пока недоступен. Пройдите предыдущие уроки, чтобы открыть его."}
+          </p>
+          <Button
+            onClick={() =>
+              router.push(`/course/${courseSlug}/module/${moduleSlug}`)
+            }
+          >
+            Вернуться к модулю
+          </Button>
+        </div>
+      </Container>
+    );
+  }
+
+  if (isLoading) {
     return (
       <Container>
         <div className="space-y-6">
@@ -243,7 +317,7 @@ export default function LessonPage() {
     );
   }
 
-  if (error || !courseTree || !currentModule || !currentLesson || !lesson) {
+  if (error || !courseTree || !currentModule || !lesson) {
     return (
       <Container>
         <div className="flex flex-col items-center justify-center py-40">
@@ -256,7 +330,6 @@ export default function LessonPage() {
     );
   }
 
-  // Компонент для подсветки кода
   const CodeBlock = ({ inline, className, children, ...props }: any) => {
     const codeRef = useRef<HTMLElement>(null);
     const match = /language-(\w+)/.exec(className || "");

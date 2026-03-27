@@ -48,7 +48,7 @@ export const LoginForm = () => {
         refreshToken: response.refreshToken,
       });
 
-      router.push("/profile");
+      router.push("/");
     } catch (e) {
       showAlert({
         variant: "destructive",
@@ -66,14 +66,15 @@ export const LoginForm = () => {
       <div className="h-screen flex flex-col justify-center items-center text-[16px]">
         <form
           onSubmit={handleSubmit}
-          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4 bg-white"
+          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4 bg-white shadow-xl"
         >
           <h1 className="font-semibold text-[28px]">С возвращением!</h1>
           <p className="text-gray-600">Войдите, чтобы продолжить</p>
           
-          <Field>
-            <FieldLabel>Имя пользователя</FieldLabel>
+          <Field >
+            <FieldLabel className="text-base">Имя пользователя</FieldLabel >
             <Input
+            className="text-base"
               placeholder="Введите имя пользователя"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -83,8 +84,9 @@ export const LoginForm = () => {
           </Field>
           
           <Field>
-            <FieldLabel>Пароль</FieldLabel>
+            <FieldLabel className="text-base">Пароль</FieldLabel>
             <Input
+            className="text-base"
               type="password"
               placeholder="Введите пароль"
               value={password}
@@ -94,7 +96,7 @@ export const LoginForm = () => {
             />
           </Field>
           
-          <a href="/forgot-password" className="font-medium hover:underline w-fit text-sm text-gray-500">
+          <a href="/forgot-password" className="font-medium hover:underline w-fit text-base text-gray-500">
             Забыли пароль?
           </a>
 
@@ -110,7 +112,7 @@ export const LoginForm = () => {
         
         <a
           href="/register"
-          className="font-medium text-black/60 text-center mt-3 hover:text-black"
+          className="font-medium text-black/60 text-center mt-3 "
         >
           Еще нет аккаунта?{" "}
           <span className="text-black hover:underline">Регистрация</span>
