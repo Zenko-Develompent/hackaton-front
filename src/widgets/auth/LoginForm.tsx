@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 
 import { useAlert } from "@/features/alert/alert-store";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { ParallaxBackground } from "../ParallaxBackground/ParallaxBackground";
 
 export const LoginForm = () => {
   const showAlert = useAlert();
@@ -22,7 +23,7 @@ export const LoginForm = () => {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // 👈 добавил preventDefault
-    
+
     if (!identifier.trim() || !password.trim()) {
       showAlert({
         variant: "destructive",
@@ -61,48 +62,56 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col justify-center items-center text-[16px]">
-      <form
-        onSubmit={handleSubmit}
-        className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4"
-      >
-        <h1 className="font-semibold text-[28px]">С возвращением!</h1>
-        <p>Войдите, чтобы продолжить</p>
-        <Field>
-          <FieldLabel>Логин/Пароль</FieldLabel>
-          <Input
-            required={true}
-            placeholder="Email или username"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            disabled={loading}
-          />
-        </Field>
-        <Field>
-          <FieldLabel>Пароль</FieldLabel>
-          <Input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            required={true}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-          />
-        </Field>
-        <a href="/" className="font-medium hover:underline w-fit">
-          Забыли пароль?
-        </a>
+    <ParallaxBackground imageUrl="/bg.png">
+      <div className="h-screen flex flex-col justify-center items-center text-[16px] ">
+        <form
+          onSubmit={handleSubmit}
+          className="border border-[#E5E5E5] p-5 rounded-[40px] w-100 flex flex-col gap-4"
+        >
+          <h1 className="font-semibold text-[28px]">С возвращением!</h1>
+          <p>Войдите, чтобы продолжить</p>
+          <Field>
+            <FieldLabel>Логин/Пароль</FieldLabel>
+            <Input
+              required={true}
+              placeholder="Email или username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              disabled={loading}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Пароль</FieldLabel>
+            <Input
+              type="password"
+              placeholder="Пароль"
+              value={password}
+              required={true}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+          </Field>
+          <a href="/" className="font-medium hover:underline w-fit">
+            Забыли пароль?
+          </a>
 
-        <Button type="submit" className="w-full text-[16px]" disabled={loading} size="lg">
-          {loading ? "Загрузка..." : "Войти"}
-        </Button>
-      </form>
-      <a
-        href="/register"
-        className="font-medium text-black/60 text-center mt-3"
-      >
-        Еще нет аккаунта? <span className="text-black hover:underline">Регистрация</span>
-      </a>
-    </div>
+          <Button
+            type="submit"
+            className="w-full text-[16px]"
+            disabled={loading}
+            size="lg"
+          >
+            {loading ? "Загрузка..." : "Войти"}
+          </Button>
+        </form>
+        <a
+          href="/register"
+          className="font-medium text-black/60 text-center mt-3"
+        >
+          Еще нет аккаунта?{" "}
+          <span className="text-black hover:underline">Регистрация</span>
+        </a>
+      </div>
+    </ParallaxBackground>
   );
 };

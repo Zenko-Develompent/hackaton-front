@@ -9,6 +9,7 @@ import { authApi } from '@/entities/auth/api/auth.api';
 import { useApiInitialized } from '@/features/api/ApiInitializer';
 import type { UserProfile } from '@/entities/user/model/types';
 import { Spinner } from '@/components/ui/spinner';
+import { ScreenLoader } from '@/widgets/ScreenLoader/ScreenLoader';
 
 export const AuthProvider = ({
   children,
@@ -172,9 +173,7 @@ export const AuthProvider = ({
 
   if (!isMounted || !isApiInitialized || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner className="size-8" />
-      </div>
+      <ScreenLoader/>
     );
   }
 

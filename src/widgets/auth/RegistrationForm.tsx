@@ -13,6 +13,7 @@ import {
   ButtonGroupSeparator,
 } from "@/components/ui/button-group";
 import { cn } from "@/lib/utils";
+import { ParallaxBackground } from "../ParallaxBackground/ParallaxBackground";
 
 export const RegisterForm = () => {
   const router = useRouter();
@@ -127,77 +128,75 @@ export const RegisterForm = () => {
   const [userType, setUserType] = useState<"child" | "parent" | null>(null);
 
   return (
-    <div className="h-screen flex flex-col justify-center items-center text-[16px]">
-      <form
-        onSubmit={handleSubmit}
-        action=""
-        className="border border-[#E5E5E5]  p-5 rounded-[40px] w-100 flex flex-col gap-4"
-      >
-        <h1 className="font-semibold text-[28px]">Создайте аккаунт</h1>
-        <p>Заполните данные для регистрации</p>
-        <Field>
-          <FieldLabel>Логин</FieldLabel>
-          <Input required={true} placeholder="Email или username" />
-        </Field>
-        <Field>
-          <FieldLabel>Почта</FieldLabel>
-          <Input required={true} placeholder="Email или username" />
-        </Field>
-        <Field>
-          <FieldLabel>Пароль</FieldLabel>
-          <Input
-            type="password"
-            placeholder="Пароль"
-            value={password}
-            required={true}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </Field>
-        <Field>
-          <FieldLabel>Пароль</FieldLabel>
-          <Input
-            type="password"
-            placeholder="Повторите пароль"
-            value={password}
-            required={true}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </Field>
+    <ParallaxBackground imageUrl="/bg.png">
+      <div className="h-screen flex flex-col justify-center items-center text-[16px]">
+        <form
+          onSubmit={handleSubmit}
+          action=""
+          className="border border-[#E5E5E5]  p-5 rounded-[40px] w-100 flex flex-col gap-4"
+        >
+          <h1 className="font-semibold text-[28px]">Создайте аккаунт</h1>
+          <p>Заполните данные для регистрации</p>
+          <Field>
+            <FieldLabel>Логин</FieldLabel>
+            <Input required={true} placeholder="Email или username" />
+          </Field>
+          <Field>
+            <FieldLabel>Почта</FieldLabel>
+            <Input required={true} placeholder="Email или username" />
+          </Field>
+          <Field>
+            <FieldLabel>Пароль</FieldLabel>
+            <Input
+              type="password"
+              placeholder="Пароль"
+              value={password}
+              required={true}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>Пароль</FieldLabel>
+            <Input
+              type="password"
+              placeholder="Повторите пароль"
+              value={password}
+              required={true}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
 
-        <ButtonGroup className="w-full">
-          <Button
-            className="flex-1 text-[16px]"
-            
-            type="button"
-            size="lg"
-            variant={userType === "child" ? "default" : "outline"}
-            onClick={() => setUserType("child")}
-          >
-            Ребенок
-          </Button>
-          <ButtonGroupSeparator />
-          <Button
-            className="flex-1 text-[16px]"
-            type="button"
-            size="lg"
-            variant={userType === "parent" ? "default" : "outline"}
-            onClick={() => setUserType("parent")}
-          >
-            Родитель
-          </Button>
-        </ButtonGroup>
+          <ButtonGroup className="w-full">
+            <Button
+              className="flex-1 text-[16px]"
+              type="button"
+              size="lg"
+              variant={userType === "child" ? "default" : "outline"}
+              onClick={() => setUserType("child")}
+            >
+              Ребенок
+            </Button>
+            <ButtonGroupSeparator />
+            <Button
+              className="flex-1 text-[16px]"
+              type="button"
+              size="lg"
+              variant={userType === "parent" ? "default" : "outline"}
+              onClick={() => setUserType("parent")}
+            >
+              Родитель
+            </Button>
+          </ButtonGroup>
 
-        <Button type="submit" className="w-full" disabled={loading} size="lg">
-          {loading ? "Загрузка..." : "Войти"}
-        </Button>
-      </form>
-      <a
-        href="/register"
-        className="font-medium text-black/60 text-center mt-3"
-      >
-        Уже есть аккаунт?{" "}
-        <span className="text-black hover:underline">Войти</span>
-      </a>
-    </div>
+          <Button type="submit" className="w-full" disabled={loading} size="lg">
+            {loading ? "Загрузка..." : "Войти"}
+          </Button>
+        </form>
+        <a href="/login" className="font-medium text-black/60 text-center mt-3">
+          Уже есть аккаунт?{" "}
+          <span className="text-black hover:underline">Войти</span>
+        </a>
+      </div>
+    </ParallaxBackground>
   );
 };
