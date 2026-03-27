@@ -1,5 +1,5 @@
 import { api } from '@/shared/api/client';
-import type { UserProfile, UpdateProfileRequest } from '../model/types';
+import type { UserProfile, UpdateProfileRequest } from "../model/types";
 
 export const userApi = {
   getProfile: () =>

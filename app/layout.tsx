@@ -1,10 +1,15 @@
+// app/layout.tsx
+
 import type { Metadata } from "next";
 import "./globals.css";
-import { Nunito, Nunito_Sans } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { AlertProvider } from "@/features/alert/alert-store";
+import { ApiInitializer } from "@/features/api/ApiInitializer";
+import { Header } from "@/widgets/header/Header";
 
-const nunitoSans = Nunito_Sans({subsets:['latin'],variable:'--font-sans'});
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -19,10 +24,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full antialiased", "font-sans", nunitoSans.variable)}
+      className={cn("h-full antialiased", "font-sans", montserrat.variable)}
     >
       <body suppressHydrationWarning>
-        <AuthProvider>{children}</AuthProvider>
+        <AlertProvider>
+          <ApiInitializer>
+            <AuthProvider>
+              <Header/>
+              {children}
+            </AuthProvider>
+          </ApiInitializer>
+        </AlertProvider>
       </body>
     </html>
   );

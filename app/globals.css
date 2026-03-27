@@ -54,7 +54,7 @@
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.5 0.134 242.749);
+    --primary: #3572FF;
     --primary-foreground: oklch(0.977 0.013 236.62);
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -89,7 +89,7 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.443 0.11 240.79);
+    --primary: #3572FF;
     --primary-foreground: oklch(0.977 0.013 236.62);
     --secondary: oklch(0.274 0.006 286.033);
     --secondary-foreground: oklch(0.985 0 0);
@@ -116,14 +116,23 @@
     --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Остальной код выше */
+
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-    }
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
+  
   body {
-    @apply bg-background text-foreground;
-    }
+    background-color: var(--background);
+    color: var(--foreground);
+    font-size: 16px ;
+  
+  }
+  
   html {
-    @apply font-sans;
-    }
+    font-family: var(--font-sans);
+    font-size: 16px;
+  }
 }

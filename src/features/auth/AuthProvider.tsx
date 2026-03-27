@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { usePathname } from 'next/navigation'; // добавляем
 import { AuthContext } from './auth-context';
 import { tokenStorage } from '@/shared/lib/storage';
 import { userApi } from '@/entities/user/api/user.api';
 import { authApi } from '@/entities/auth/api/auth.api';
-import { initApiClient } from '@/shared/api/client';
+import { useApiInitialized } from '@/features/api/ApiInitializer';
 import type { UserProfile } from '@/entities/user/model/types';
+import { Spinner } from '@/components/ui/spinner';
 
 export const AuthProvider = ({
   children,
@@ -15,73 +17,38 @@ export const AuthProvider = ({
 }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isApiInitialized, setIsApiInitialized] = useState(false);
+  const isMountedRef = useRef(true);
+  const { isInitialized: isApiInitialized } = useApiInitialized();
+  const pathname = usePathname(); // отслеживаем путь
+  const prevPathnameRef = useRef(pathname);
 
   const isAuth = !!user;
 
-  // 🔹 Инициализация API клиента (один раз при монтировании)
   useEffect(() => {
-    console.log('[AuthProvider] Initializing API client...');
-    
-    initApiClient({
-      fetchImpl: fetch,
-      getAccessToken: () => {
-        try {
-          return tokenStorage.getAccess();
-        } catch (error) {
-          console.error('[AuthProvider] Error getting access token:', error);
-          return null;
-        }
-      },
-      refresh: async () => {
-        try {
-          const refreshToken = tokenStorage.getRefresh();
-          if (!refreshToken) {
-            console.log('[AuthProvider] No refresh token available');
-            return null;
-          }
-          
-          console.log('[AuthProvider] Refreshing tokens...');
-          const data = await authApi.refresh();
-          
-          tokenStorage.setAccess(data.accessToken);
-          tokenStorage.setRefresh(data.refreshToken);
-          
-          console.log('[AuthProvider] Tokens refreshed successfully');
-          return {
-            accessToken: data.accessToken,
-            refreshToken: data.refreshToken,
-          };
-        } catch (error) {
-          console.error('[AuthProvider] Token refresh failed:', error);
-          return null;
-        }
-      },
-      onAuthFailure: () => {
-        console.log('[AuthProvider] Auth failure, clearing tokens');
-        tokenStorage.clear();
-        setUser(null);
-      },
-    });
-    
-    setIsApiInitialized(true);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
-  // 🔹 Получение профиля
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       console.log('[AuthProvider] Fetching user profile...');
       const data = await userApi.getProfile();
-      setUser(data);
-      console.log('[AuthProvider] User profile fetched:', data);
+      
+      if (isMountedRef.current) {
+        setUser(data);
+        console.log('[AuthProvider] User profile fetched:', data);
+      }
+      
+      return data;
     } catch (error) {
       console.error('[AuthProvider] Failed to fetch user:', error);
       throw error;
     }
-  };
+  }, []);
 
-  // 🔹 Логин (после login API)
-  const login = async ({
+  const login = useCallback(async ({
     accessToken,
     refreshToken,
   }: {
@@ -93,18 +60,24 @@ export const AuthProvider = ({
     tokenStorage.setRefresh(refreshToken);
 
     try {
-      await fetchUser();
-      console.log('[AuthProvider] Login successful');
+      await new Promise(resolve => setTimeout(resolve, 0));
+      const userData = await fetchUser();
+      
+      if (isMountedRef.current) {
+        setUser(userData);
+        console.log('[AuthProvider] Login successful');
+      }
     } catch (error) {
       console.error('[AuthProvider] Login failed:', error);
-      // Если не удалось получить профиль, очищаем токены
-      tokenStorage.clear();
+      if (isMountedRef.current) {
+        tokenStorage.clear();
+        setUser(null);
+      }
       throw error;
     }
-  };
+  }, [fetchUser]);
 
-  // 🔹 Логаут
-  const logout = async () => {
+  const logout = useCallback(async () => {
     console.log('[AuthProvider] Logging out...');
     try {
       const refreshToken = tokenStorage.getRefresh();
@@ -114,67 +87,93 @@ export const AuthProvider = ({
     } catch (error) {
       console.error('[AuthProvider] Logout API call failed:', error);
     } finally {
-      tokenStorage.clear();
-      setUser(null);
+      if (isMountedRef.current) {
+        tokenStorage.clear();
+        setUser(null);
+      }
       console.log('[AuthProvider] Logout successful');
     }
-  };
+  }, []);
 
-  // 🔥 INIT логика (запускается после инициализации API)
-  useEffect(() => {
-    if (!isApiInitialized) {
-      console.log('[AuthProvider] Waiting for API initialization...');
-      return;
+  // 🔥 Функция проверки аутентификации
+  const checkAuth = useCallback(async () => {
+    console.log('[AuthProvider] Checking auth state...');
+    const access = tokenStorage.getAccess();
+    const refresh = tokenStorage.getRefresh();
+
+    if (!access && !refresh) {
+      console.log('[AuthProvider] No tokens found, skipping auth check');
+      setUser(null);
+      return false;
     }
+
+    try {
+      console.log('[AuthProvider] Tokens found, fetching user...');
+      await fetchUser();
+      console.log('[AuthProvider] Auth state verified successfully');
+      return true;
+    } catch (error) {
+      console.error('[AuthProvider] Failed to fetch user with existing tokens:', error);
+      
+      // Пробуем обновить токены
+      try {
+        console.log('[AuthProvider] Attempting to refresh tokens...');
+        const data = await authApi.refresh();
+        
+        tokenStorage.setAccess(data.accessToken);
+        tokenStorage.setRefresh(data.refreshToken);
+        
+        console.log('[AuthProvider] Tokens refreshed, fetching user again...');
+        await fetchUser();
+        console.log('[AuthProvider] Auth state restored after refresh');
+        return true;
+      } catch (refreshError) {
+        console.error('[AuthProvider] Refresh failed, clearing tokens:', refreshError);
+        tokenStorage.clear();
+        setUser(null);
+        return false;
+      }
+    }
+  }, [fetchUser]);
+
+  // 🔥 Инициализация при монтировании
+  useEffect(() => {
+    if (!isApiInitialized) return;
     
     const init = async () => {
-      console.log('[AuthProvider] Initializing auth state...');
-      const access = tokenStorage.getAccess();
-      const refresh = tokenStorage.getRefresh();
-
-      if (!access && !refresh) {
-        console.log('[AuthProvider] No tokens found, skipping auth check');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        console.log('[AuthProvider] Tokens found, fetching user...');
-        await fetchUser();
-        console.log('[AuthProvider] Auth state initialized successfully');
-      } catch (error) {
-        console.error('[AuthProvider] Failed to fetch user with existing tokens:', error);
-        
-        // Пробуем обновить токены
-        try {
-          console.log('[AuthProvider] Attempting to refresh tokens...');
-          const data = await authApi.refresh();
-          
-          tokenStorage.setAccess(data.accessToken);
-          tokenStorage.setRefresh(data.refreshToken);
-          
-          console.log('[AuthProvider] Tokens refreshed, fetching user again...');
-          await fetchUser();
-          console.log('[AuthProvider] Auth state restored after refresh');
-        } catch (refreshError) {
-          console.error('[AuthProvider] Refresh failed, clearing tokens:', refreshError);
-          tokenStorage.clear();
-          setUser(null);
-        }
-      }
-
+      setIsLoading(true);
+      await checkAuth();
       setIsLoading(false);
     };
-
+    
     init();
-  }, [isApiInitialized]);
+  }, [isApiInitialized, checkAuth]);
 
-  // Показываем loader пока инициализируется API
-  if (!isApiInitialized) {
-    console.log('[AuthProvider] Showing loader (API not initialized)');
+  // 🔥 ОТСЛЕЖИВАЕМ ИЗМЕНЕНИЯ РОУТА
+  useEffect(() => {
+    if (!isApiInitialized) return;
+    
+    // Проверяем, изменился ли путь
+    if (prevPathnameRef.current !== pathname) {
+      console.log('[AuthProvider] Route changed from', prevPathnameRef.current, 'to', pathname);
+      console.log('[AuthProvider] Re-checking auth state...');
+      
+      // Перепроверяем аутентификацию при смене роута
+      checkAuth();
+      prevPathnameRef.current = pathname;
+    }
+  }, [pathname, isApiInitialized, checkAuth]);
+
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted || !isApiInitialized || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <Spinner className="size-8" />
       </div>
     );
   }
