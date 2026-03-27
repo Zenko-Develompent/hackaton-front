@@ -18,6 +18,8 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github-dark.css";
 
+import CoinIconWhite from "@/shared/assets/icons/CoinVerticalWhite.svg";
+
 import { useRef } from "react";
 import hljs from "highlight.js";
 
@@ -255,63 +257,62 @@ export default function LessonPage() {
   }
 
   // Компонент для подсветки кода
- const CodeBlock = ({ inline, className, children, ...props }: any) => {
-  const codeRef = useRef<HTMLElement>(null);
-  const match = /language-(\w+)/.exec(className || "");
-  const language = match ? match[1] : "";
-  const codeString = String(children).replace(/\n$/, "");
-  
-  useEffect(() => {
-    if (codeRef.current && !inline && language) {
-      hljs.highlightElement(codeRef.current);
+  const CodeBlock = ({ inline, className, children, ...props }: any) => {
+    const codeRef = useRef<HTMLElement>(null);
+    const match = /language-(\w+)/.exec(className || "");
+    const language = match ? match[1] : "";
+    const codeString = String(children).replace(/\n$/, "");
+
+    useEffect(() => {
+      if (codeRef.current && !inline && language) {
+        hljs.highlightElement(codeRef.current);
+      }
+    }, [codeString, language, inline]);
+
+    if (!inline && language) {
+      return (
+        <pre className="rounded-xl overflow-x-auto bg-gray-900 p-4 my-4">
+          <code
+            ref={codeRef}
+            className={`language-${language} hljs`}
+            {...props}
+          >
+            {codeString}
+          </code>
+        </pre>
+      );
     }
-  }, [codeString, language, inline]);
-  
-  if (!inline && language) {
+
+    if (!inline) {
+      return (
+        <pre className="rounded-xl overflow-x-auto bg-gray-900 p-4 my-4">
+          <code {...props} className="hljs">
+            {children}
+          </code>
+        </pre>
+      );
+    }
+
     return (
-      <pre className="rounded-xl overflow-x-auto bg-gray-900 p-4 my-4">
-        <code
-          ref={codeRef}
-          className={`language-${language} hljs`}
-          {...props}
-        >
-          {codeString}
-        </code>
-      </pre>
+      <code
+        className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-pink-500"
+        {...props}
+      >
+        {children}
+      </code>
     );
-  }
-  
-  if (!inline) {
-    return (
-      <pre className="rounded-xl overflow-x-auto bg-gray-900 p-4 my-4">
-        <code {...props} className="hljs">
-          {children}
-        </code>
-      </pre>
-    );
-  }
-  
-  return (
-    <code
-      className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-pink-500"
-      {...props}
-    >
-      {children}
-    </code>
-  );
-};
+  };
 
   return (
     <Container>
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
 
       {/* Hero секция */}
-      <div className="flex flex-col items-start mt-5 gap-6 rounded-[40px] p-5 bg-[#35BCFF] text-white">
+      <div className="relative flex flex-col items-start mt-5 gap-6 rounded-[40px] p-5 bg-[#35BCFF] text-white">
         <div>
           <span className="text-[20px] opacity-60">
             Урок{" "}
-            {currentLessonIndex !== undefined ? currentLessonIndex + 1 : ""} •{" "}
-            {lesson.xp} XP
+            {currentLessonIndex !== undefined ? currentLessonIndex + 1 : ""}
           </span>
           <h1 className="text-[40px] leading-none font-semibold mt-2">
             {lesson.name}
@@ -342,6 +343,10 @@ export default function LessonPage() {
             </Button>
           )}
         </div>
+        <span className="absolute -top-2 -right-4 rotate-12 flex  bg-[#FF841D] rounded-[200px] items-center justify-center pl-3 font-medium text-[20px] text-white cursor-pointer">
+          +{lesson.xp}
+          <CoinIconWhite />
+        </span>
       </div>
 
       {/* Контент урока в формате Markdown */}
