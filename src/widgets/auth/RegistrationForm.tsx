@@ -173,9 +173,9 @@ export const RegisterForm = () => {
                 Родитель
               </Button>
             </ButtonGroup>
-            <FieldLabel>Имя пользователя</FieldLabel>
+            <FieldLabel>Логин</FieldLabel>
             <Input
-              placeholder="Введите имя пользователя"
+              placeholder="Введите логин"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required

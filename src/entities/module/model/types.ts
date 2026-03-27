@@ -35,6 +35,7 @@ export type ModuleExamResponse = {
   description: string;
   questionsCount: number;
   tasksCount: number;
+  unlocked: boolean;
 };
 
 export type ModuleProgress = {

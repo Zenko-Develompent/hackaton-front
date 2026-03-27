@@ -8,7 +8,7 @@ import type {
 
 export const questApi = {
   getAnswers: (questId: string) =>
-    api().get<QuestAnswersResponse>(`/quests/${questId}/answers`),
+    api().get<QuestAnswersResponse>(`/quests/${questId}/answers`, {auth: true}),
 
   check: (questId: string, data: QuestCheckRequest, withAuth?: boolean) =>
     api().post<QuestCheckResponse>(`/quests/${questId}/check`, data, {

@@ -46,6 +46,7 @@ export const TaskRunner = ({
         setCompleted(true);
         onComplete?.(completeResponse);
       }
+      setRunning(false);
     } catch (error) {
       setResult({
         status: 'error',

@@ -1,4 +1,5 @@
 // entities/community/api/community.api.ts
+
 import { api } from "@/shared/api/client";
 import type {
   LeaderboardResponse,
@@ -8,7 +9,11 @@ import type {
 } from "../model/types";
 
 export const communityApi = {
-  getLeaderboard: (period: LeaderboardPeriod = 'week', metric: LeaderboardMetric = 'activity', limit = 9) =>
+  getLeaderboard: (
+    period: LeaderboardPeriod = 'week',
+    metric: LeaderboardMetric = 'activity',
+    limit = 9
+  ) =>
     api().get<LeaderboardResponse>('/community/leaderboard', {
       params: { period, metric, limit },
     }),

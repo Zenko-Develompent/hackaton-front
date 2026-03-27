@@ -6,22 +6,37 @@ import { useAuth } from "@/features/auth/useAuth";
 import { Container } from "@/widgets/container/Container";
 import { CourseCard } from "@/widgets/Courses/CourseCard";
 import { CoursesWrapper } from "@/widgets/Courses/CoursesWrapper";
+import { LessonCard } from "@/widgets/Courses/LessonCard";
 import { useRouter } from "next/navigation";
 import { courseApi } from "@/entities/course/api/course.api";
 import type { Course } from "@/entities/course/model/types";
+import { LeaderboardWidget } from "@/widgets/community/LeaderboardWidget";
 
+const LAST_LESSON_STORAGE_KEY = "last_lesson";
 
-
+interface LastLessonData {
+  courseId: string;
+  courseSlug: string;
+  courseName: string;
+  moduleId: string;
+  moduleSlug: string;
+  moduleName: string;
+  lessonId: string;
+  lessonSlug: string;
+  lessonName: string;
+  timestamp: number;
+}
 
 export default function Home() {
-
-  document.title="Доки Доки | Главная"
   const auth = useAuth();
   const router = useRouter();
-  
+
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [lastLessons, setLastLessons] = useState<LastLessonData[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [lessonsLoading, setLessonsLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState(false);
+  const [lessonsError, setLessonsError] = useState(false);
 
   const handleStart = () => {
     if (auth.isAuth) {
@@ -31,46 +46,147 @@ export default function Home() {
     }
   };
 
+  // Функция для очистки дублирующихся уроков (по одному на курс)
+  const cleanupDuplicateLessons = (lessonsMap: Record<string, LastLessonData>): Record<string, LastLessonData> => {
+    const cleaned: Record<string, LastLessonData> = {};
+    
+    // Для каждого курса оставляем только последний урок (с максимальным timestamp)
+    for (const courseId in lessonsMap) {
+      const lesson = lessonsMap[courseId];
+      
+      // Если для этого курса еще нет урока, добавляем
+      if (!cleaned[courseId]) {
+        cleaned[courseId] = lesson;
+      } else {
+        // Если уже есть, сравниваем timestamp и оставляем более новый
+        if (lesson.timestamp > cleaned[courseId].timestamp) {
+          cleaned[courseId] = lesson;
+        }
+      }
+    }
+    
+    return cleaned;
+  };
+
+  // Функция для проверки, что уроки действительно уникальны по названиям и ID
+  const validateAndCleanLessons = (lessonsMap: Record<string, LastLessonData>): Record<string, LastLessonData> => {
+    const validated: Record<string, LastLessonData> = {};
+    const seenLessonKeys = new Set<string>();
+    
+    for (const courseId in lessonsMap) {
+      const lesson = lessonsMap[courseId];
+      
+      // Создаем уникальный ключ урока (курс + название урока + название модуля)
+      const lessonKey = `${lesson.courseId}-${lesson.lessonName}-${lesson.moduleName}`;
+      
+      // Если такой урок уже был, проверяем timestamp
+      if (seenLessonKeys.has(lessonKey)) {
+        // Ищем существующий урок с таким же ключом
+        const existingCourseId = Object.keys(validated).find(
+          (id) => `${validated[id].courseId}-${validated[id].lessonName}-${validated[id].moduleName}` === lessonKey
+        );
+        
+        if (existingCourseId) {
+          const existingLesson = validated[existingCourseId];
+          // Оставляем более новый по времени
+          if (lesson.timestamp > existingLesson.timestamp) {
+            validated[existingCourseId] = lesson;
+          }
+        }
+      } else {
+        seenLessonKeys.add(lessonKey);
+        validated[courseId] = lesson;
+      }
+    }
+    
+    return validated;
+  };
+
+  // Загрузка сохраненных уроков из localStorage
+  const loadLastLessons = () => {
+    try {
+      setLessonsLoading(true);
+      setLessonsError(false);
+
+      const saved = localStorage.getItem(LAST_LESSON_STORAGE_KEY);
+      if (saved) {
+        let lessonsMap: Record<string, LastLessonData> = JSON.parse(saved);
+        
+        // Шаг 1: Очищаем дубликаты по курсам (оставляем только последний урок на курс)
+        lessonsMap = cleanupDuplicateLessons(lessonsMap);
+        
+        // Шаг 2: Дополнительная валидация по названиям уроков и модулей
+        lessonsMap = validateAndCleanLessons(lessonsMap);
+        
+        // Сохраняем очищенные данные обратно в localStorage
+        localStorage.setItem(LAST_LESSON_STORAGE_KEY, JSON.stringify(lessonsMap));
+        
+        // Преобразуем объект в массив и сортируем по времени (сначала новые)
+        const lessonsArray = Object.values(lessonsMap).sort(
+          (a, b) => b.timestamp - a.timestamp
+        );
+        setLastLessons(lessonsArray);
+      } else {
+        setLastLessons([]);
+      }
+    } catch (err) {
+      console.error("Failed to load last lessons:", err);
+      setLessonsError(true);
+    } finally {
+      setLessonsLoading(false);
+    }
+  };
+
   // Загрузка курсов
   const fetchCourses = async () => {
     try {
-      setLoading(true);
-      setError(false);
-      
+      setCoursesLoading(true);
+      setCoursesError(false);
 
       const response = await courseApi.getCourses(0, 4);
-      console.log(response.items)
       setCourses(response.items);
-      setLoading(false);
-      
     } catch (err) {
       console.error("Error fetching courses:", err);
-      setError(true);
-      setLoading(false);
+      setCoursesError(true);
+    } finally {
+      setCoursesLoading(false);
     }
   };
 
   useEffect(() => {
     fetchCourses();
+    loadLastLessons();
   }, []);
 
   const handleStartLearning = (courseId: string) => {
-    console.log("Start learning course:", courseId);
     if (auth.isAuth) {
-      router.push(`/course/${courseId}?start=true`);
+      router.push(`/course/${courseId}?startLearn=true`);
     } else {
       router.push("/login");
     }
   };
 
   const handleDetails = (courseId: string) => {
-    console.log("Show details for course:", courseId);
     router.push(`/course/${courseId}`);
   };
 
-  const handleRetry = () => {
+  const handleRetryCourses = () => {
     fetchCourses();
   };
+
+  const handleRetryLessons = () => {
+    loadLastLessons();
+  };
+
+  const handleContinueLesson = (lessonUrl: string) => {
+    if (auth.isAuth) {
+      router.push(lessonUrl);
+    } else {
+      router.push("/login");
+    }
+  };
+
+  const hasLastLessons = lastLessons.length > 0 && !lessonsLoading;
 
   return (
     <Container>
@@ -80,7 +196,7 @@ export default function Home() {
           <h1 className="font-semibold text-[40px]">
             Создавай игры, сайты и приложения — а не просто смотри уроки
           </h1>
-          <p className="opacity-80 ">
+          <p className="opacity-80">
             Начни путь в IT уже сейчас: программирование, дизайн и разработка —
             через практику и реальные проекты
           </p>
@@ -88,7 +204,7 @@ export default function Home() {
         <Button
           className="text-[20px] bg-white text-primary z-10"
           size="lg"
-          onClick={() => handleStart()}
+          onClick={handleStart}
         >
           Начать обучение
         </Button>
@@ -100,13 +216,49 @@ export default function Home() {
         />
       </div>
 
+      {/* Блок "Продолжить обучение" - показываем только если есть сохраненные уроки */}
+      {hasLastLessons && (
+        <div className="flex flex-col gap-20 mb-20">
+          <CoursesWrapper
+            title="Продолжите, где остановились"
+            loading={lessonsLoading}
+            error={lessonsError}
+            onRetry={handleRetryLessons}
+            emptyMessage="Нет сохраненных уроков"
+            errorMessage="Не удалось загрузить сохраненные уроки"
+            initialLimit={3}
+          >
+            {lastLessons.map((lesson) => (
+              <LessonCard
+                key={`${lesson.courseId}-${lesson.lessonId}`}
+                courseId={lesson.courseId}
+                courseSlug={lesson.courseSlug}
+                courseName={lesson.courseName}
+                moduleId={lesson.moduleId}
+                moduleSlug={lesson.moduleSlug}
+                moduleName={lesson.moduleName}
+                lessonId={lesson.lessonId}
+                lessonSlug={lesson.lessonSlug}
+                lessonName={lesson.lessonName}
+                timestamp={lesson.timestamp}
+                onContinue={handleContinueLesson}
+              />
+            ))}
+          </CoursesWrapper>
+        </div>
+      )}
+
+      <div className="mb-20">
+        <LeaderboardWidget/>
+      </div>
+
       {/* Курсы */}
       <div className="flex flex-col gap-20">
         <CoursesWrapper
           title="Наши курсы"
-          loading={loading}
-          error={error}
-          onRetry={handleRetry}
+          loading={coursesLoading}
+          error={coursesError}
+          onRetry={handleRetryCourses}
           emptyMessage="Курсы временно недоступны"
           errorMessage="Не удалось загрузить курсы"
           initialLimit={2}
@@ -118,7 +270,6 @@ export default function Home() {
               onStartLearning={handleStartLearning}
               onDetails={handleDetails}
             />
-            
           ))}
         </CoursesWrapper>
       </div>

@@ -11,13 +11,13 @@ import type {
 
 export const examApi = {
   getExam: (examId: string) =>
-    api().get<Exam>(`/exams/${examId}`),
+    api().get<Exam>(`/exams/${examId}`, {auth: true}),
 
   getQuestions: (examId: string) =>
-    api().get<ExamQuestionsResponse>(`/exams/${examId}/questions`),
+    api().get<ExamQuestionsResponse>(`/exams/${examId}/questions`, {auth: true}),
 
   getTasks: (examId: string) =>
-    api().get<ExamTasksResponse>(`/exams/${examId}/tasks`),
+    api().get<ExamTasksResponse>(`/exams/${examId}/tasks`, {auth: true}),
 
   complete: (examId: string) =>
     api().post<ExamCompleteResponse>(`/exams/${examId}/complete`, undefined, {

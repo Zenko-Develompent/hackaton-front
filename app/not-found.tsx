@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/widgets/container/Container";
 import { useRouter } from "next/navigation";
 
+document.title="Доки Доки | Не найдено";
 export default function NotFound() {
   const router = useRouter();
 

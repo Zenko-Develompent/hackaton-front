@@ -1,4 +1,5 @@
 // entities/community/model/types.ts
+
 export type LeaderboardPeriod = 'day' | 'week' | 'month';
 export type LeaderboardMetric = 'activity' | 'xp';
 
@@ -23,6 +24,9 @@ export type FeedEventType =
   | 'exam_completed'
   | 'level_up'
   | 'achievement_unlocked'
+  | 'message_sent'
+  | 'code_error'
+  | 'lesson_repeated'
   | 'streak_day';
 
 export type FeedItem = {

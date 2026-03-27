@@ -11,9 +11,10 @@ interface MenuModalProps {
   isOpen: boolean;
   onClose: () => void;
   anchorEl: HTMLElement | null;
+  userId?: string;
 }
 
-export const MenuModal = ({ isOpen, onClose, anchorEl }: MenuModalProps) => {
+export const MenuModal = ({ isOpen, onClose, anchorEl, userId }: MenuModalProps) => {
   const router = useRouter();
   const { logout } = useAuth();
   const modalRef = useRef<HTMLDivElement>(null);
@@ -70,7 +71,7 @@ export const MenuModal = ({ isOpen, onClose, anchorEl }: MenuModalProps) => {
         <Button
           variant="ghost"
           className="w-full gap-3 text-base px-3 py-5 flex justify-between rounded-[12px] hover:bg-gray-100"
-          onClick={() => handleNavigation("/profile")}
+          onClick={() => handleNavigation(`/profile/${userId}`)}
         >
           Профиль
           <User className="w-4 h-4" />

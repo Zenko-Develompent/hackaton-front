@@ -7,13 +7,14 @@ import { useRouter } from "next/navigation";
 import CoinIcon from "@/shared/assets/icons/CoinVertical.svg";
 import UserIcon from "@/shared/assets/icons/User.svg";
 import { MenuModal } from "../Modal/MenuModal";
+import { Star } from "lucide-react";
 
 export const Header = () => {
   const auth = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const userButtonRef = useRef<HTMLButtonElement>(null);
-  
+
   // Состояния для баланса и уровня (можно брать из auth или отдельного API)
   const [balance, setBalance] = useState(0);
   const [level, setLevel] = useState(0);
@@ -31,7 +32,7 @@ export const Header = () => {
       setBalance(auth.user.coins || 0);
       setLevel(auth.user.level || 0);
       setXp(auth.user.xp || 0);
-      
+
       // Можно также загрузить из отдельного API
       // const fetchUserStats = async () => {
       //   try {
@@ -65,24 +66,18 @@ export const Header = () => {
           <div className="flex gap-2 items-center">
             {/* Уровень */}
             <div className="relative flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-gray-100 rounded-full px-3 py-2.5">
-                <span className="text-sm font-medium text-gray-700">LVL {level}</span>
-                <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500">{xp}/{nextLevelXp}</span>
+              <div className="flex items-center gap-1 bg-primary/10 rounded-full px-4 py-2.5 ">
+                <Star className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Уровень {level}</span>
               </div>
             </div>
-            
+
             {/* Монеты */}
             <button className="flex border-2 border-[#FF841D] rounded-[200px] items-center justify-center gap-1 pl-3 font-medium text-[16px] text-[#FF841D] cursor-pointer hover:bg-orange-50 transition-colors">
               {balance}
               <CoinIcon />
             </button>
-            
+
             {/* Кнопка пользователя */}
             <button
               ref={userButtonRef}
@@ -99,6 +94,7 @@ export const Header = () => {
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         anchorEl={userButtonRef.current}
+        userId={auth.user?.username}
       />
     </>
   );

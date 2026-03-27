@@ -43,6 +43,8 @@ export default function QuizPage() {
     correctAnswers: number;
   } | null>(null);
   
+  document.title = "Доки Доки | Тест " + quiz?.name;
+
   // Названия для хлебных крошек
   const [courseName, setCourseName] = useState<string>("");
   const [moduleName, setModuleName] = useState<string>("");

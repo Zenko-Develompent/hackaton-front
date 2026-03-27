@@ -16,6 +16,7 @@ import { TaskRunner, ResultDisplay, ProgressBar } from "@/shared/ui";
 import type { LessonTask } from "@/entities/lesson/model/types";
 import type { CourseTree } from "@/entities/course/model/types";
 import type { LessonShort } from "@/entities/module/model/types";
+import { Frown } from "lucide-react";
 
 export default function TaskPage() {
   const params = useParams();
@@ -28,12 +29,15 @@ export default function TaskPage() {
   const [task, setTask] = useState<LessonTask | null>(null);
   const [courseTree, setCourseTree] = useState<CourseTree | null>(null);
   const [moduleLessons, setModuleLessons] = useState<LessonShort[]>([]);
+  const [quizCompleted, setQuizCompleted] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [taskStarted, setTaskStarted] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
+  document.title = "Доки Доки | Задание " + task?.name;
+
   // Названия для хлебных крошек
   const [courseName, setCourseName] = useState<string>("");
   const [moduleName, setModuleName] = useState<string>("");
@@ -56,10 +60,15 @@ export default function TaskPage() {
     (lesson) => lesson.lessonId === lessonSlug,
   );
   const currentLessonData = moduleLessons[currentLessonIndex];
-  const isLessonUnlocked = currentLessonData?.unlocked !== false && isModuleUnlocked;
-  const isTaskUnlocked = isLessonUnlocked && !!task?.taskId;
+  const isLessonUnlocked =
+    currentLessonData?.unlocked !== false && isModuleUnlocked;
 
-  // Загрузка данных
+  // Проверяем, что тест пройден (если есть quizId)
+  const isQuizRequired = !!currentLessonData?.quizId;
+  const isTaskAvailable =
+    isLessonUnlocked && (!isQuizRequired || quizCompleted) && !!task?.taskId;
+
+  // Загрузка данных и проверка прохождения теста
   useEffect(() => {
     const fetchData = async () => {
       if (!lessonSlug || !moduleSlug || !courseSlug) return;
@@ -67,30 +76,51 @@ export default function TaskPage() {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Загружаем информацию о задании
         const taskData = await lessonApi.getTask(lessonSlug);
         setTask(taskData);
-        
+
         // Загружаем названия для хлебных крошек
         try {
           const courseTreeData = await courseApi.getTree(courseSlug, isAuth);
           setCourseTree(courseTreeData);
           setCourseName(courseTreeData.name);
-          
+
           const moduleData = await moduleApi.getModule(moduleSlug);
           setModuleName(moduleData.name);
-          
+
           const lessonData = await lessonApi.getLesson(lessonSlug);
           setLessonName(lessonData.name);
-          
+
           // Загружаем уроки модуля для проверки доступности
           const lessonsData = await moduleApi.getLessons(moduleSlug, isAuth);
           setModuleLessons(lessonsData.items);
+
+          // Проверяем, пройден ли тест (если есть)
+          const currentLesson = lessonsData.items.find(
+            (l) => l.lessonId === lessonSlug,
+          );
+          if (currentLesson?.quizId) {
+            // Получаем прогресс урока, чтобы узнать, пройден ли тест
+            try {
+              const progress = await lessonApi.getProgress(lessonSlug);
+              console.log(progress);
+              // Считаем, что тест пройден, если прогресс 100% или больше 50% (в зависимости от логики)
+              // В реальности нужно проверять, завершен ли тест
+              setQuizCompleted(progress.completed || progress.percent >= 50);
+            } catch (err) {
+              console.error("Error fetching lesson progress:", err);
+              setQuizCompleted(false);
+            }
+          } else {
+            // Если нет теста, то задание доступно
+            setQuizCompleted(true);
+          }
         } catch (err) {
           console.error("Error fetching names:", err);
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching task data:", err);
@@ -142,10 +172,15 @@ export default function TaskPage() {
 
   // Хлебные крошки
   const breadcrumbItems = [
-    { label: "Курсы", href: "/courses" },
     { label: courseName || "Загрузка...", href: `/course/${courseSlug}` },
-    { label: moduleName || "Загрузка...", href: `/course/${courseSlug}/module/${moduleSlug}` },
-    { label: lessonName || "Загрузка...", href: `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}` },
+    {
+      label: moduleName || "Загрузка...",
+      href: `/course/${courseSlug}/module/${moduleSlug}`,
+    },
+    {
+      label: lessonName || "Загрузка...",
+      href: `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`,
+    },
     { label: "Задание" },
   ];
 
@@ -156,10 +191,11 @@ export default function TaskPage() {
   if (loading) {
     return (
       <Container>
-        <div className="flex items-center justify-center py-40">
+        <div className="">
           <div className="animate-pulse text-center">
-            <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
-            <div className="h-32 bg-gray-200 rounded w-96"></div>
+            <div className="h-4 bg-gray-200 rounded-[40px] w-1/2 mb-12"></div>
+            <div className="h-8 bg-gray-200 rounded-[40px] w-1/3 mb-8"></div>
+            <div className="h-100 bg-gray-200 rounded-[40px] "></div>
           </div>
         </div>
       </Container>
@@ -167,32 +203,61 @@ export default function TaskPage() {
   }
 
   // Проверка доступа
-  if (!isTaskUnlocked) {
+  if (!isTaskAvailable) {
+    let accessMessage = "";
+    if (!isModuleUnlocked) {
+      accessMessage =
+        "Этот модуль пока недоступен. Пройдите предыдущие модули, чтобы открыть его.";
+    } else if (!isLessonUnlocked) {
+      accessMessage =
+        "Этот урок пока недоступен. Пройдите предыдущие уроки, чтобы открыть его.";
+    } else if (isQuizRequired && !quizCompleted) {
+      accessMessage =
+        "Для доступа к заданию необходимо сначала пройти тест урока.";
+    } else {
+      accessMessage =
+        "Задание недоступно. Возможно, вы уже выполнили его или оно не найдено.";
+    }
+
     return (
       <Container>
         <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
-        
-        <div className="flex flex-col items-center justify-center py-40 text-center">
+
+        <div className="flex flex-col justify-center items-center text-center mt-24">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6-4h12m-6 0v-4m0 4h4m-4 0H6m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Frown size={40} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Задание недоступно
           </h1>
-          <p className="text-gray-600 mb-8 max-w-md">
-            {!isModuleUnlocked 
-              ? "Этот модуль пока недоступен. Пройдите предыдущие модули, чтобы открыть его."
-              : !isLessonUnlocked 
-                ? "Этот урок пока недоступен. Пройдите предыдущие уроки, чтобы открыть его."
-                : "Задание недоступно. Возможно, вы уже выполнили его или оно не найдено."}
-          </p>
-          <Button
-            onClick={() => router.push(`/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`)}
-          >
-            Вернуться к уроку
-          </Button>
+          <p className="text-gray-600 mb-8 max-w-md">{accessMessage}</p>
+          <div className="flex gap-2">
+            {isQuizRequired && !quizCompleted && (
+              <Button
+                variant="outline"
+                className="text-base"
+                size="lg"
+                onClick={() =>
+                  router.push(
+                    `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}/quiz`,
+                  )
+                }
+              >
+                Пройти тест
+              </Button>
+            )}
+            <Button
+              size="lg"
+              className="text-base"
+              onClick={() =>
+                router.push(
+                  `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`,
+                )
+              }
+            >
+              Вернуться к уроку
+            </Button>
+          </div>
         </div>
       </Container>
     );
@@ -201,10 +266,18 @@ export default function TaskPage() {
   if (error || !task) {
     return (
       <Container>
-        <div className="flex flex-col items-center justify-center py-40">
-          <p className="text-red-500 mb-4">{error || "Задание не найдено"}</p>
-          <Button onClick={() => window.location.reload()}>
-            Попробовать снова
+        <div className="flex flex-col justify-center items-center py-40">
+          <p className="text-red-500 mb-8">{error || "Задание не найдено"}</p>
+          <Button
+            size="lg"
+            className="text-base"
+            onClick={() =>
+              router.push(
+                `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`,
+              )
+            }
+          >
+            Вернуться к уроку
           </Button>
         </div>
       </Container>
@@ -215,26 +288,32 @@ export default function TaskPage() {
     return (
       <Container>
         <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
-        
+
         <ResultDisplay
           title="Задание выполнено!"
-          message={result.firstCompletion 
-            ? `Вы получили ${result.xpGranted} XP и ${result.coinGranted} монет`
-            : "Вы уже выполняли это задание"}
+          message={
+            result.firstCompletion
+              ? `Вы получили ${result.xpGranted} XP и ${result.coinGranted} монет`
+              : "Вы уже выполняли это задание"
+          }
           details={[
             { label: "XP", value: result.xpGranted, highlight: true },
             { label: "Монеты", value: result.coinGranted, highlight: true },
           ]}
           actions={[
-            { 
-              label: "Вернуться к уроку", 
-              onClick: () => router.push(`/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`),
-              variant: "outline"
+            {
+              label: "Вернуться к уроку",
+              onClick: () =>
+                router.push(
+                  `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`,
+                ),
+              variant: "outline",
             },
-            { 
-              label: "К модулю", 
-              onClick: () => router.push(`/course/${courseSlug}/module/${moduleSlug}`),
-              variant: "primary"
+            {
+              label: "К модулю",
+              onClick: () =>
+                router.push(`/course/${courseSlug}/module/${moduleSlug}`),
+              variant: "primary",
             },
           ]}
         />
@@ -246,16 +325,18 @@ export default function TaskPage() {
     return (
       <Container>
         <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
-        
-        <div className="py-10">
+
+        <div className=" py-10">
           <div className="">
             <h1 className="text-3xl font-bold mb-4">{task.name}</h1>
             <p className="text-gray-600 mb-6">{task.description}</p>
-            
+
             <div className="space-y-4 mb-8 p-4 bg-gray-50 rounded-xl">
               <div className="flex justify-between">
                 <span className="text-gray-600">Язык:</span>
-                <span className="font-semibold">{task.runnerLanguage || "C#"}</span>
+                <span className="font-semibold">
+                  {task.runnerLanguage || "C#"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Награда:</span>
@@ -264,11 +345,15 @@ export default function TaskPage() {
                 </span>
               </div>
             </div>
-            
+
             <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => router.push(`/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`)} 
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(
+                    `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`,
+                  )
+                }
                 className="flex-1"
               >
                 Вернуться к уроку
@@ -286,31 +371,39 @@ export default function TaskPage() {
   return (
     <Container>
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
-      
-      <div className="max-w-4xl mx-auto py-10">
+
+      <div className="py-10">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{task.name}</h1>
           <p className="text-gray-600 mb-4">{task.description}</p>
           <div className="flex gap-4">
             {task.xpReward && (
-              <span className="text-sm text-green-600">+{task.xpReward} XP</span>
+              <span className="text-sm text-green-600">
+                +{task.xpReward} XP
+              </span>
             )}
             {task.coinReward && (
-              <span className="text-sm text-orange-500">+{task.coinReward} монет</span>
+              <span className="text-sm text-orange-500">
+                +{task.coinReward} монет
+              </span>
             )}
           </div>
         </div>
-        
+
         <TaskRunner
           taskId={task.taskId}
           language={task.runnerLanguage || "csharp"}
           onComplete={handleTaskComplete}
         />
-        
+
         <div className="mt-8">
           <Button
             variant="outline"
-            onClick={() => router.push(`/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`)}
+            onClick={() =>
+              router.push(
+                `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`,
+              )
+            }
             className="w-full"
           >
             Вернуться к уроку

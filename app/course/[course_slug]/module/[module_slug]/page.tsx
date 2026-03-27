@@ -12,9 +12,11 @@ import { moduleApi } from "@/entities/module/api/module.api";
 import { CoursesWrapper } from "@/widgets/Courses/CoursesWrapper";
 import { CourseCard } from "@/widgets/Courses/CourseCard";
 import { useAuth } from "@/features/auth/useAuth";
-import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, AlertCircle } from "lucide-react";
 import type { CourseTree, Course } from "@/entities/course/model/types";
 import type { LessonShort } from "@/entities/module/model/types";
+import type { ModuleExamResponse } from "@/entities/module/model/types";
+import { log } from "console";
 
 export default function ModulePage() {
   const params = useParams();
@@ -25,6 +27,7 @@ export default function ModulePage() {
   const [courseTree, setCourseTree] = useState<CourseTree | null>(null);
   const [lessons, setLessons] = useState<LessonShort[]>([]);
   const [examId, setExamId] = useState<string | null>(null);
+  const [examAccessible, setExamAccessible] = useState<boolean>(false);
   const [courseName, setCourseName] = useState<string>("");
   const [moduleName, setModuleName] = useState<string>("");
   const [moduleDescription, setModuleDescription] = useState<string>("");
@@ -34,6 +37,9 @@ export default function ModulePage() {
   const [recommendedLoading, setRecommendedLoading] = useState(true);
   const [recommendedError, setRecommendedError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+
+  document.title="Доки Доки | Модуль " + moduleName;
 
   const { isAuth } = useAuth();
 
@@ -92,6 +98,24 @@ export default function ModulePage() {
 
     fetchCourseTree();
   }, [courseSlug, moduleSlug, isAuth]);
+
+  // Проверка доступности экзамена
+  useEffect(() => {
+    const checkExamAccessibility = async () => {
+      if (!moduleSlug || !examId || !isAuth) return;
+      
+      try {
+        const examInfo = await moduleApi.getExam(moduleSlug);
+        console.log(examInfo);
+        setExamAccessible(examInfo.unlocked === true);
+      } catch (err) {
+        console.error("Error checking exam accessibility:", err);
+        setExamAccessible(false);
+      }
+    };
+
+    checkExamAccessibility();
+  }, [moduleSlug, examId, isAuth]);
 
   // Загрузка уроков модуля
   useEffect(() => {
@@ -172,7 +196,6 @@ export default function ModulePage() {
     }
 
     if (!isModuleUnlocked) {
-      // Показываем уведомление о недоступности модуля
       setError("Этот модуль пока недоступен. Пройдите предыдущие модули.");
       return;
     }
@@ -253,6 +276,8 @@ export default function ModulePage() {
     );
   }
 
+  const showExamWarning = examId && !examAccessible && isAuth && isModuleUnlocked;
+
   return (
     <Container>
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
@@ -324,12 +349,12 @@ export default function ModulePage() {
                     {isAuth && isLessonUnlocked ? (
                       <Link
                         href={`/course/${courseSlug}/module/${moduleSlug}/lesson/${lesson.lessonId}`}
-                        className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
+                        className="text-gray-700  flex items-center gap-2"
                       >
-                        <span className="font-medium">
-                          Урок {lessonIndex + 1}.
+                        <span className="font-medium hover:text-blue-600 hover:underline transition-colors">
+                          Урок {lessonIndex + 1}. {lesson.name}
                         </span>
-                        <span>{lesson.name}</span>
+   
                         {lesson.quizId && (
                           <span className="text-xs text-gray-400 ml-2">+ Тест</span>
                         )}
@@ -355,20 +380,28 @@ export default function ModulePage() {
               {/* Экзамен модуля */}
               {examId && (
                 <div className={`px-5 py-4 transition-colors border-t border-gray-100 ${
-                  isModuleUnlocked ? "hover:bg-gray-50" : ""
+                  isModuleUnlocked && examAccessible ? "hover:bg-gray-50" : ""
                 }`}>
-                  {isAuth && isModuleUnlocked ? (
+                  {isAuth && isModuleUnlocked && examAccessible ? (
                     <Link
-                      href={`/course/${courseSlug}/module/${moduleSlug}/exam/${examId}`}
+                      href={`/course/${courseSlug}/module/${moduleSlug}/exam`}
                       className="text-gray-700 hover:text-blue-600 hover:underline transition-colors flex items-center gap-2"
                     >
                       <span className="font-medium">Итоговый экзамен</span>
                     </Link>
                   ) : (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <span className="font-medium">Итоговый экзамен</span>
-                      {!isModuleUnlocked && (
-                        <Lock className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <span className="font-medium">Итоговый экзамен</span>
+                        {!isModuleUnlocked && <Lock className="w-4 h-4 text-gray-400" />}
+                        {showExamWarning && (
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        )}
+                      </div>
+                      {showExamWarning && (
+                        <span className="text-xs text-yellow-600">
+                          Пройдите все уроки модуля
+                        </span>
                       )}
                     </div>
                   )}

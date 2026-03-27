@@ -84,7 +84,7 @@ export const AlertTop = ({
   return (
     <div
       className={cn(
-        "fixed z-50 w-full max-w-md",
+        "fixed w-full max-w-md z-100000",
         positionClasses[position],
         !isLeaving
           ? "animate-in fade-in slide-in-from-top-2 duration-300"

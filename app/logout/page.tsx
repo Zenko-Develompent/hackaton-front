@@ -8,6 +8,7 @@ import { Container } from "@/widgets/container/Container";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
+document.title="Доки Доки | Выход из аккаунта"
 export default function LogoutPage() {
   const router = useRouter();
   const { logout, isAuth } = useAuth();

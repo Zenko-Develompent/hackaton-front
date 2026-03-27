@@ -38,7 +38,7 @@ export const LoginForm = () => {
 
     try {
       const response = await authApi.login({
-        username: username.trim(),
+        id: username.trim(),
         password,
       });
 

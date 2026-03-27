@@ -23,6 +23,23 @@ import type { CourseTree, Course } from "@/entities/course/model/types";
 import type { Lesson } from "@/entities/lesson/model/types";
 import type { LessonShort } from "@/entities/module/model/types";
 
+// Ключ для хранения в localStorage
+const LAST_LESSON_STORAGE_KEY = "last_lesson";
+
+// Интерфейс для сохранения последнего урока
+interface LastLessonData {
+  courseId: string;
+  courseSlug: string;
+  courseName: string;
+  moduleId: string;
+  moduleSlug: string;
+  moduleName: string;
+  lessonId: string;
+  lessonSlug: string;
+  lessonName: string;
+  timestamp: number;
+}
+
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
@@ -39,7 +56,7 @@ export default function LessonPage() {
   const [recommendedLoading, setRecommendedLoading] = useState(true);
   const [recommendedError, setRecommendedError] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const { isAuth } = useAuth();
 
   // Находим текущий модуль и индексы
@@ -63,42 +80,43 @@ export default function LessonPage() {
   const isLessonUnlocked =
     currentLessonData?.unlocked !== false && isModuleUnlocked;
 
-  // Находим предыдущий и следующий доступные уроки
-  const getPrevAvailableLesson = () => {
-    // Ищем предыдущий доступный урок в текущем модуле
-    for (let i = currentLessonIndex - 1; i >= 0; i--) {
-      if (moduleLessons[i]?.unlocked !== false && isModuleUnlocked) {
-        return moduleLessons[i];
+  // Сохранение последнего урока в localStorage
+  const saveLastLesson = () => {
+    if (!courseTree || !currentModule || !lesson) return;
+    
+    const lastLessonData: LastLessonData = {
+      courseId: courseTree.courseId,
+      courseSlug: courseSlug,
+      courseName: courseTree.name,
+      moduleId: currentModule.moduleId,
+      moduleSlug: moduleSlug,
+      moduleName: currentModule.name,
+      lessonId: lesson.lessonId,
+      lessonSlug: lessonSlug,
+      lessonName: lesson.name,
+      timestamp: Date.now(),
+    };
+    
+    try {
+      // Получаем существующие данные
+      const existingData = localStorage.getItem(LAST_LESSON_STORAGE_KEY);
+      let lessonsMap: Record<string, LastLessonData> = {};
+      
+      if (existingData) {
+        lessonsMap = JSON.parse(existingData);
       }
+      
+      // Сохраняем только один урок на курс (по courseId)
+      lessonsMap[courseTree.courseId] = lastLessonData;
+      
+      // Сохраняем обратно в localStorage
+      localStorage.setItem(LAST_LESSON_STORAGE_KEY, JSON.stringify(lessonsMap));
+      
+      console.log("[LessonPage] Saved last lesson:", lastLessonData);
+    } catch (err) {
+      console.error("[LessonPage] Failed to save last lesson:", err);
     }
-    return null;
   };
-
-  const getNextAvailableLesson = () => {
-    // Ищем следующий доступный урок в текущем модуле
-    for (let i = currentLessonIndex + 1; i < moduleLessons.length; i++) {
-      if (moduleLessons[i]?.unlocked !== false && isModuleUnlocked) {
-        return moduleLessons[i];
-      }
-    }
-    return null;
-  };
-
-  const prevLesson = getPrevAvailableLesson();
-  const nextLesson = getNextAvailableLesson();
-
-  // Находим предыдущий и следующий модули для навигации
-  const prevModule =
-    currentModuleIndex !== undefined && currentModuleIndex > 0
-      ? courseTree?.modules[currentModuleIndex - 1]
-      : null;
-  const nextModule =
-    currentModuleIndex !== undefined &&
-    currentModuleIndex !== -1 &&
-    courseTree &&
-    currentModuleIndex < courseTree.modules.length - 1
-      ? courseTree?.modules[currentModuleIndex + 1]
-      : null;
 
   // Загрузка структуры курса
   useEffect(() => {
@@ -158,6 +176,13 @@ export default function LessonPage() {
     fetchLesson();
   }, [lessonSlug]);
 
+  // Сохраняем последний урок после успешной загрузки всех данных
+  useEffect(() => {
+    if (!isLoading && !lessonLoading && courseTree && lesson && currentModule) {
+      saveLastLesson();
+    }
+  }, [loading, lessonLoading, lessonLoading, courseTree, lesson, currentModule, courseSlug, moduleSlug, lessonSlug]);
+
   // Загрузка рекомендуемых курсов
   const fetchRecommendedCourses = async () => {
     try {
@@ -192,13 +217,45 @@ export default function LessonPage() {
   ];
 
   // Обработчики навигации
+  const getPrevAvailableLesson = () => {
+    for (let i = currentLessonIndex - 1; i >= 0; i--) {
+      if (moduleLessons[i]?.unlocked !== false && isModuleUnlocked) {
+        return moduleLessons[i];
+      }
+    }
+    return null;
+  };
+
+  const getNextAvailableLesson = () => {
+    for (let i = currentLessonIndex + 1; i < moduleLessons.length; i++) {
+      if (moduleLessons[i]?.unlocked !== false && isModuleUnlocked) {
+        return moduleLessons[i];
+      }
+    }
+    return null;
+  };
+
+  const prevLesson = getPrevAvailableLesson();
+  const nextLesson = getNextAvailableLesson();
+
+  const prevModule =
+    currentModuleIndex !== undefined && currentModuleIndex > 0
+      ? courseTree?.modules[currentModuleIndex - 1]
+      : null;
+  const nextModule =
+    currentModuleIndex !== undefined &&
+    currentModuleIndex !== -1 &&
+    courseTree &&
+    currentModuleIndex < courseTree.modules.length - 1
+      ? courseTree?.modules[currentModuleIndex + 1]
+      : null;
+
   const handlePrevLesson = () => {
     if (prevLesson) {
       router.push(
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${prevLesson.lessonId}`,
       );
     } else if (prevModule) {
-      // Ищем последний доступный урок в предыдущем модуле
       const lastAvailableLesson = prevModule.lessons
         .slice()
         .reverse()
@@ -219,7 +276,6 @@ export default function LessonPage() {
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${nextLesson.lessonId}`,
       );
     } else if (nextModule) {
-      // Ищем первый доступный урок в следующем модуле
       const firstAvailableLesson = nextModule.lessons.find(
         (lesson) => lesson.unlocked !== false,
       );
@@ -385,7 +441,7 @@ export default function LessonPage() {
         <div>
           <span className="text-[20px] opacity-60">
             Урок{" "}
-            {currentLessonIndex !== undefined ? currentLessonIndex + 1 : ""}
+            {currentLessonIndex !== undefined ? currentLessonIndex + 1 : ""} • {lesson.xp} XP
           </span>
           <h1 className="text-[40px] leading-none font-semibold mt-2">
             {lesson.name}
@@ -422,7 +478,7 @@ export default function LessonPage() {
         </span>
       </div>
 
-      {/* Контент урока в формате Markdown */}
+       {/* Контент урока в формате Markdown */}
       <div className="mt-10 mb-20">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

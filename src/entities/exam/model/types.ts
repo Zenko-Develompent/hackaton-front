@@ -8,6 +8,7 @@ export type Exam = {
   coinReward: number;
   questionsCount: number;
   tasksCount: number;
+  unlocked: boolean;
 };
 
 export type ExamQuestion = {

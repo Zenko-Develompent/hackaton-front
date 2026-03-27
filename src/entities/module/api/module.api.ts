@@ -17,7 +17,7 @@ export const moduleApi = {
     }),
 
   getExam: (moduleId: string) =>
-    api().get<ModuleExamResponse>(`/modules/${moduleId}/exam`),
+    api().get<ModuleExamResponse>(`/modules/${moduleId}/exam`, {auth: true}),
 
   getProgress: (moduleId: string) =>
     api().get<ModuleProgress>(`/modules/${moduleId}/progress`, {
