@@ -72,7 +72,10 @@ export const Header = () => {
         >
           <Star className="w-4 h-4 text-primary" />
         </motion.div>
-        <button onClick={() => router.replace("/profile/" + auth.user)} className="relative overflow-hidden min-w-[60px] text-center">
+        <button
+          onClick={() => router.replace(`/profile/${auth.user?.username ?? "me"}`)}
+          className="relative overflow-hidden min-w-[60px] text-center"
+        >
           <span className="text-sm font-medium inline-block">
             Уровень {level}
           </span>

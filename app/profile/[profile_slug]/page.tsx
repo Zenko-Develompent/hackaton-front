@@ -195,7 +195,7 @@ export default function ProfilePage() {
         setError(null);
 
         // Если есть параметр child_user_name и пользователь родитель
-        if (childUserName && isParent && !isOwnProfile) {
+        if (childUserName && isParent) {
           await loadChildByUsername(childUserName);
           return;
         }
@@ -232,7 +232,7 @@ export default function ProfilePage() {
           if (isAuth && isParent && profileSlug !== currentUser?.username) {
             try {
               // Пытаемся загрузить дашборд (если просматриваемый пользователь - ребёнок)
-              await loadChildDashboard(profileSlug);
+              await loadChildDashboard(data.userId);
             } catch (err) {
               setIsParentView(false);
             }
