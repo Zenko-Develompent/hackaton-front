@@ -37,6 +37,8 @@ export default function TaskPage() {
   const [error, setError] = useState<string | null>(null);
   const [examId, setExamId] = useState<string | null>(null);
 
+  document.title="Доки Доки | " + task?.name;
+
   // Названия для хлебных крошек
   const [courseName, setCourseName] = useState<string>("");
   const [moduleName, setModuleName] = useState<string>("");

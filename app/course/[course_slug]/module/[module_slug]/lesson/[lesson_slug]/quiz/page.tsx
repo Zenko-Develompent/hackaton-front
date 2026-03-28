@@ -22,6 +22,8 @@ export default function QuizPage() {
   const moduleSlug = params.module_slug as string;
   const lessonSlug = params.lesson_slug as string;
 
+  
+
   const [quiz, setQuiz] = useState<LessonQuiz | null>(null);
   const [quizSession, setQuizSession] = useState<QuizStartResponse | null>(
     null,
@@ -46,6 +48,8 @@ export default function QuizPage() {
   const [lessonName, setLessonName] = useState<string>("");
 
   const { isAuth } = useAuth();
+
+  document.title="Доки Доки | " +  quiz?.name;
 
   // Загрузка данных квиза и названий
   useEffect(() => {

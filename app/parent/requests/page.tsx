@@ -32,6 +32,8 @@ interface ParentRequest {
 }
 
 export default function ParentRequestsPage() {
+
+  document.title="Доки Доки | Родительский контроль"
   const router = useRouter();
   const { user, isAuth } = useAuth();
   const showAlert = useAlert();

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 document.title="Доки Доки | Не найдено";
 export default function NotFound() {
   const router = useRouter();
+  document.title="Доки Доки | Не найдено"
 
   return (
     <Container>

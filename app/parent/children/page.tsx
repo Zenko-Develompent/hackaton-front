@@ -23,6 +23,7 @@ import { parentApi } from "@/entities/parent/api/parent.api";
 import { BreadcrumbNavigation } from "@/widgets/BreadcrumbNavigation ";
 
 export default function ChildrenPage() {
+   document.title="Доки Доки | Родительский контроль"
   const router = useRouter();
   const { user, isAuth } = useAuth();
   const showAlert = useAlert();

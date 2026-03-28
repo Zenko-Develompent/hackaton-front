@@ -62,6 +62,8 @@ export default function LessonPage() {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [taskCompleted, setTaskCompleted] = useState(false);
   const [lessonProgress, setLessonProgress] = useState<any>(null);
+
+  document.title="Доки Доки | " + lesson?.name;
   
   const { isAuth } = useAuth();
 

@@ -26,6 +26,7 @@ import { userApi } from "@/entities/auth/api/auth.api";
 import { BreadcrumbNavigation } from "@/widgets/BreadcrumbNavigation ";
 
 export default function AddChildPage() {
+   document.title="Доки Доки | Родительский контроль"
   const router = useRouter();
   const { user, isAuth } = useAuth();
   const showAlert = useAlert();

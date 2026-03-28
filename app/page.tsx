@@ -14,6 +14,8 @@ import { LeaderboardWidget } from "@/widgets/community/LeaderboardWidget";
 
 const LAST_LESSON_STORAGE_KEY = "last_lesson";
 
+
+
 interface LastLessonData {
   userId: string;
   courseId: string;
@@ -32,6 +34,8 @@ export default function Home() {
   const auth = useAuth();
   const router = useRouter();
 
+  
+  document.title="Доки Доки | Главная"
   const [courses, setCourses] = useState<Course[]>([]);
   const [lastLessons, setLastLessons] = useState<LastLessonData[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -169,6 +173,7 @@ const loadLastLessons = () => {
   };
 
   useEffect(() => {
+    
     fetchCourses();
     loadLastLessons();
   }, []);

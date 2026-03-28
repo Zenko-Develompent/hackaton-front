@@ -57,6 +57,8 @@ export default function ExamPage() {
   const [result, setResult] = useState<any>(null);
   const [showRetryDialog, setShowRetryDialog] = useState(false);
 
+  document.title="Доки Доки | " + exam?.name;
+
   // Состояния для заданий
   const [taskResults, setTaskResults] = useState<
     Record<string, { completed: boolean; code?: string }>
