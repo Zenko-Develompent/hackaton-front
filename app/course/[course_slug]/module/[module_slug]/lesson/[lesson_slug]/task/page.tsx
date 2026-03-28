@@ -61,6 +61,13 @@ export default function TaskPage() {
     (lesson) => lesson.lessonId === lessonSlug,
   );
   const currentLessonData = moduleLessons[currentLessonIndex];
+
+  const nextLessonData =
+    currentLessonIndex >= 0 && currentLessonIndex + 1 < moduleLessons.length
+      ? moduleLessons[currentLessonIndex + 1]
+      : null;
+  const hasNextLesson = !!nextLessonData?.lessonId;
+
   const isLessonUnlocked =
     currentLessonData?.unlocked !== false && isModuleUnlocked;
 
@@ -185,6 +192,7 @@ export default function TaskPage() {
     return null;
   }
 
+
   if (loading) {
     return (
       <Container>
@@ -307,16 +315,26 @@ export default function TaskPage() {
               variant: "outline",
             },
             {
-              label: examId ? "Перейти к экзамену" : "К модулю",
-              onClick: () => {
-                if (examId) {
-                  router.push(`/course/${courseSlug}/module/${moduleSlug}/exam`);
-                } else {
-                  router.push(`/course/${courseSlug}/module/${moduleSlug}`);
-                }
-              },
-              variant: "primary",
+            label: hasNextLesson
+              ? "Следующий урок"
+              : examId
+                ? "Перейти к экзамену"
+                : "К модулю",
+            onClick: () => {
+              if (hasNextLesson && nextLessonData?.lessonId) {
+                router.push(
+                  `/course/${courseSlug}/module/${moduleSlug}/lesson/${nextLessonData.lessonId}`,
+                );
+                return;
+              }
+              if (examId) {
+                router.push(`/course/${courseSlug}/module/${moduleSlug}/exam`);
+              } else {
+                router.push(`/course/${courseSlug}/module/${moduleSlug}`);
+              }
             },
+            variant: "primary",
+          },
           ]}
         />
       </Container>
