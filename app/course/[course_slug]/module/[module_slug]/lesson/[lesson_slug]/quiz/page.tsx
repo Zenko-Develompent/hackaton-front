@@ -60,7 +60,7 @@ export default function QuizPage() {
         setLoading(true);
         setError(null);
 
-        const quizData = await lessonApi.getQuiz(lessonSlug);
+        const quizData = await lessonApi.getQuiz(lessonSlug, isAuth);
         setQuiz(quizData);
 
         try {
@@ -70,7 +70,7 @@ export default function QuizPage() {
           const moduleData = await moduleApi.getModule(moduleSlug);
           setModuleName(moduleData.name);
 
-          const lessonData = await lessonApi.getLesson(lessonSlug);
+          const lessonData = await lessonApi.getLesson(lessonSlug, isAuth);
           setLessonName(lessonData.name);
         } catch (err) {
           console.error("Error fetching names:", err);

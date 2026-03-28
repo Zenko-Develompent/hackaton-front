@@ -86,7 +86,7 @@ export default function TaskPage() {
         setError(null);
 
         // Загружаем информацию о задании
-        const taskData = await lessonApi.getTask(lessonSlug);
+        const taskData = await lessonApi.getTask(lessonSlug, isAuth);
         setTask(taskData);
 
         // Загружаем названия для хлебных крошек
@@ -99,7 +99,7 @@ export default function TaskPage() {
           setModuleName(moduleData.name);
           setExamId(moduleData.exam?.examId || null);
 
-          const lessonData = await lessonApi.getLesson(lessonSlug);
+          const lessonData = await lessonApi.getLesson(lessonSlug, isAuth);
           setLessonName(lessonData.name);
 
           // Загружаем уроки модуля для проверки доступности

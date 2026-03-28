@@ -169,7 +169,7 @@ export default function LessonPage() {
       try {
         setLessonLoading(true);
 
-        const data = await lessonApi.getLesson(lessonSlug);
+        const data = await lessonApi.getLesson(lessonSlug, isAuth);
         console.log(data)
         setLesson(data);
         
