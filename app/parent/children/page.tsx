@@ -144,7 +144,7 @@ export default function ChildrenPage() {
                 key={child.childUserId}
                 className="bg-white rounded-2xl border border-gray-100 p-4  transition-shadow cursor-pointer"
                 onClick={() =>
-                  router.push(`/profile/${user?.username}`)
+                  router.push(`/profile/${user?.username}?child_user_name=` + child.childUsername)
                 }
               >
                 <div className="flex items-center gap-4">
@@ -191,7 +191,7 @@ export default function ChildrenPage() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push("/profile/" + user?.userId)}
+            onClick={() => router.push("/profile/" + user?.username)}
             className="gap-2"
           >
             <User className="w-4 h-4" />
