@@ -2,18 +2,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { CodeEditor } from "./CodeEditor";
 import { CodeOutput } from "./CodeOutput";
 import { TaskStatus } from "./TaskStatus";
 import { taskApi } from "@/entities/task/api/task.api";
+import type { TaskRunResponse } from "@/entities/task/model/types";
+
+type TaskRunnerResult =
+  | TaskRunResponse
+  | {
+      status: "error";
+      stderr: string;
+    };
 
 
 interface TaskRunnerProps {
   taskId: string;
   language: string;
   initialCode?: string;
-  onComplete?: (result: any) => void;
+  onComplete?: (result: TaskRunResponse) => void;
 }
 
 export const TaskRunner = ({
@@ -24,7 +31,7 @@ export const TaskRunner = ({
 }: TaskRunnerProps) => {
   const [code, setCode] = useState(initialCode);
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<TaskRunnerResult | null>(null);
   const [completed, setCompleted] = useState(false);
 
   // Синхронизация с initialCode при изменении
@@ -37,17 +44,14 @@ export const TaskRunner = ({
     
     setRunning(true);
     try {
-      
-
       const response = await taskApi.run(taskId, { language, code });
       setResult(response);
       if (response.correct && !completed) {
-        const completeResponse = await taskApi.complete(taskId);
         setCompleted(true);
-        onComplete?.(completeResponse);
+        onComplete?.(response);
       }
       setRunning(false);
-    } catch (error) {
+    } catch {
       setResult({
         status: 'error',
         stderr: 'Ошибка выполнения кода',
