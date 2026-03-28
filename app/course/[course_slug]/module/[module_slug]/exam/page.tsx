@@ -502,12 +502,28 @@ export default function ExamPage() {
   if (currentSection === "questions" && questions.length > 0) {
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswers = questionAnswers[currentQuestion?.questId] || [];
+    const answeredCount = Object.keys(answers).length;
 
     return (
       <Container>
         <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
 
         <div className="py-10">
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-sm text-gray-500">
+                Вопрос {currentQuestionIndex + 1} из {questions.length}
+              </span>
+              <span className="text-sm text-gray-500">
+                Отвечено {answeredCount} из {questions.length}
+              </span>
+            </div>
+            <ProgressBar
+              current={answeredCount}
+              total={questions.length}
+              showPercentage={true}
+            />
+          </div>
           <QuestionCard
             question={{
               id: currentQuestion.questId,

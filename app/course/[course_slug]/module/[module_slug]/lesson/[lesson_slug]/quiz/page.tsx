@@ -270,6 +270,7 @@ export default function QuizPage() {
   }
 
   const currentQuestion = quizSession.question;
+  const answeredQuestions = Math.max(0, currentQuestion.index - 1);
 
   if (!currentQuestion) {
     return (
@@ -300,7 +301,7 @@ export default function QuizPage() {
             </span>
           </div>
           <ProgressBar 
-            current={currentQuestion.index} 
+            current={answeredQuestions} 
             total={currentQuestion.total} 
             showPercentage={true}
           />

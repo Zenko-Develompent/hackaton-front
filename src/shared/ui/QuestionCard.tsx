@@ -36,14 +36,6 @@ export const QuestionCard = ({
 }: QuestionCardProps) => {
   return (
     <div className="">
-      <div className="mb-6">
-        <ProgressBar 
-          current={question.index} 
-          total={question.total} 
-          label={`Вопрос ${question.index} из ${question.total}`}
-        />
-      </div>
-      
       <h2 className="text-2xl font-bold mb-2">{question.name}</h2>
       <p className="text-gray-600 mb-8">{question.description}</p>
       
