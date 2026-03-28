@@ -393,6 +393,7 @@ export default function LessonPage() {
     const match = /language-(\w+)/.exec(className || "");
     const language = match ? match[1] : "";
     const codeString = String(children).replace(/\n$/, "");
+    const isBlockCode = Boolean(language) || codeString.includes("\n");
 
     useEffect(() => {
       if (codeRef.current && !inline && language) {
@@ -400,7 +401,7 @@ export default function LessonPage() {
       }
     }, [codeString, language, inline]);
 
-    if (!inline && language) {
+    if (isBlockCode && language) {
       return (
         <pre className="rounded-xl overflow-x-auto bg-gray-900 p-4 my-4">
           <code
@@ -414,7 +415,7 @@ export default function LessonPage() {
       );
     }
 
-    if (!inline) {
+    if (isBlockCode) {
       return (
         <pre className="rounded-xl overflow-x-auto bg-gray-900 p-4 my-4">
           <code {...props} className="hljs">
