@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/features/auth/useAuth";
+import { ApiError } from "@/shared/api/types";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,52 @@ export const RegisterForm = () => {
   const [age, setAge] = useState("");
   const [userType, setUserType] = useState<"student" | "parent" | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const REGISTER_ERROR_MESSAGES: Record<string, string> = {
+    weak_password: "Слабый пароль: минимум 8 символов, хотя бы 1 буква и 1 цифра.",
+    conflict: "Пользователь с таким именем уже существует.",
+    invalid_username: "Некорректный логин. Разрешены 3-16 символов: латиница, цифры, _.",
+    username_invalid: "Некорректный логин. Разрешены 3-16 символов: латиница, цифры, _.",
+    invalid_age: "Некорректный возраст. Допустимый диапазон: 1-120.",
+    age_invalid: "Некорректный возраст. Допустимый диапазон: 1-120.",
+    invalid_role: "Некорректный тип пользователя.",
+    role_invalid: "Некорректный тип пользователя.",
+    password_invalid: "Слабый пароль: минимум 8 символов, хотя бы 1 буква и 1 цифра.",
+    bad_request: "Проверьте корректность данных формы.",
+  };
+
+  const resolveRegisterErrorMessage = (err: unknown): string => {
+    if (ApiError.isApiError(err)) {
+      const code = String(err.data?.error || err.data?.code || err.code || "")
+        .toLowerCase()
+        .trim();
+
+      if (code && REGISTER_ERROR_MESSAGES[code]) return REGISTER_ERROR_MESSAGES[code];
+      if (err.status === 409) return REGISTER_ERROR_MESSAGES.conflict;
+      if (err.status === 429) return "Слишком много попыток. Попробуйте чуть позже.";
+      if (err.status >= 500) return "Ошибка сервера. Попробуйте позже.";
+
+      const backendMessage = err.data?.message;
+      if (typeof backendMessage === "string" && backendMessage.trim()) return backendMessage;
+
+      return "Не удалось создать аккаунт. Попробуйте позже.";
+    }
+
+    if (err instanceof Error) {
+      const message = err.message.toLowerCase();
+      if (
+        message.includes("network error") ||
+        message.includes("failed to fetch") ||
+        message.includes("load failed")
+      ) {
+        return "Нет соединения с сервером. Проверьте URL API и доступность бэка.";
+      }
+      if (message.includes("weak_password")) return REGISTER_ERROR_MESSAGES.weak_password;
+      if (message.includes("conflict")) return REGISTER_ERROR_MESSAGES.conflict;
+    }
+
+    return "Не удалось создать аккаунт. Попробуйте позже.";
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -60,11 +107,11 @@ export const RegisterForm = () => {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
       showAlert({
         variant: "destructive",
         title: "Ошибка",
-        description: "Пароль должен содержать минимум 6 символов",
+        description: "Слабый пароль: минимум 8 символов, буквы и цифры",
         autoClose: 3000,
       });
       return;
@@ -119,22 +166,13 @@ export const RegisterForm = () => {
       });
 
       router.push("/");
-    } catch (err: any) {
-      if (err.message?.includes("username already exists")) {
-        showAlert({
-          variant: "destructive",
-          title: "Ошибка регистрации",
-          description: "Пользователь с таким именем уже существует",
-          autoClose: 5000,
-        });
-      } else {
-        showAlert({
-          variant: "destructive",
-          title: "Ошибка регистрации",
-          description: "Не удалось создать аккаунт. Попробуйте позже.",
-          autoClose: 5000,
-        });
-      }
+    } catch (err: unknown) {
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка регистрации",
+        description: resolveRegisterErrorMessage(err),
+        autoClose: 5000,
+      });
       console.error("Registration error:", err);
     } finally {
       setLoading(false);
@@ -199,7 +237,7 @@ export const RegisterForm = () => {
             <FieldLabel>Пароль</FieldLabel>
             <Input
               type="password"
-              placeholder="Введите пароль (минимум 6 символов)"
+              placeholder="Введите пароль (минимум 8 символов, буквы и цифры)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
