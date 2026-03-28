@@ -22,7 +22,7 @@ export type UserProfile = {
 };
 
 export type UserPublicProfile = {
-  userId?: string;
+  userId: string;
   username: string;
   level: number;
   exp: number;
