@@ -5,15 +5,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Container } from "@/widgets/container/Container";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowLeft, 
-  Users, 
-  UserPlus, 
+import {
+  ArrowLeft,
+  Users,
+  UserPlus,
   ChevronRight,
   Calendar,
   Star,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Hand,
+  User,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/useAuth";
 import { useAlert } from "@/features/alert/alert-store";
@@ -24,7 +26,7 @@ export default function ChildrenPage() {
   const router = useRouter();
   const { user, isAuth } = useAuth();
   const showAlert = useAlert();
-  
+
   const [children, setChildren] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +59,7 @@ export default function ChildrenPage() {
     { label: "Добавить ребёнка" },
   ];
 
- // Проверка, что пользователь - родитель
+  // Проверка, что пользователь - родитель
   if (!isAuth && user?.role !== "parent") {
     return (
       <Container>
@@ -71,7 +73,12 @@ export default function ChildrenPage() {
           <p className="text-gray-600 mb-8 max-w-md">
             Эта страница доступна только для пользователей с ролью "Родитель".
           </p>
-          <Button onClick={() => router.push("/")} size="lg" className="text-base" variant="default">
+          <Button
+            onClick={() => router.push("/")}
+            size="lg"
+            className="text-base"
+            variant="default"
+          >
             На главную
           </Button>
         </div>
@@ -81,15 +88,13 @@ export default function ChildrenPage() {
 
   return (
     <Container>
-        <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
+      <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
       <div className="py-10 ">
         {/* Заголовок */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-
             <div>
               <div className="flex items-center gap-2">
-
                 <h1 className="text-3xl font-semibold">Мои дети</h1>
               </div>
               <p className="text-gray-500 mt-1">
@@ -97,14 +102,16 @@ export default function ChildrenPage() {
               </p>
             </div>
           </div>
-
         </div>
 
         {/* Список детей */}
         {loading ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse"
+              >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gray-200 rounded-full" />
                   <div className="flex-1">
@@ -134,8 +141,10 @@ export default function ChildrenPage() {
             {children.map((child) => (
               <div
                 key={child.childUserId}
-                className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => router.push(`/parent/children/${child.childUserId}`)}
+                className="bg-white rounded-2xl border border-gray-100 p-4  transition-shadow cursor-pointer"
+                onClick={() =>
+                  router.push(`/profile/${user?.username}`)
+                }
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -149,8 +158,8 @@ export default function ChildrenPage() {
                     </h3>
                     <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        с {new Date(child.since).toLocaleDateString("ru-RU")}
+                        <Calendar className="w-3 h-3" />с{" "}
+                        {new Date(child.since).toLocaleDateString("ru-RU")}
                       </span>
                     </div>
                   </div>
@@ -160,6 +169,34 @@ export default function ChildrenPage() {
             ))}
           </div>
         )}
+
+        {/* Кнопка перехода к списку детей */}
+        <div className="text-center flex justify-center gap-2 mt-10">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/parent/children")}
+            className="gap-2"
+          >
+            <Users className="w-4 h-4" />
+            Мои дети
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/parent/requests")}
+            className="gap-2"
+          >
+            <Hand className="w-4 h-4" />
+            Мои запросы
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/profile/" + user?.userId)}
+            className="gap-2"
+          >
+            <User className="w-4 h-4" />
+            Личный кабинет
+          </Button>
+        </div>
       </div>
     </Container>
   );
