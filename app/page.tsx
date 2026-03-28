@@ -201,13 +201,15 @@ export default function Home() {
             через практику и реальные проекты
           </p>
         </div>
-        <Button
-          className="text-[20px] bg-white text-primary z-10"
-          size="lg"
-          onClick={handleStart}
-        >
-          Начать обучение
-        </Button>
+        {!auth.isAuth && (
+          <Button
+            className="text-[20px] bg-white text-primary z-10"
+            size="lg"
+            onClick={handleStart}
+          >
+            Начать обучение
+          </Button>
+        )}
 
         <img
           src="/zenko.png"
