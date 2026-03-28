@@ -28,6 +28,7 @@ const LAST_LESSON_STORAGE_KEY = "last_lesson";
 
 // Интерфейс для сохранения последнего урока
 interface LastLessonData {
+  userId: string;
   courseId: string;
   courseSlug: string;
   courseName: string;
@@ -85,11 +86,14 @@ export default function LessonPage() {
   const isLessonUnlocked =
     currentLessonData?.unlocked !== false && isModuleUnlocked;
 
+  const auth = useAuth();
+
   // Сохранение последнего урока в localStorage
   const saveLastLesson = () => {
     if (!courseTree || !currentModule || !lesson) return;
     
     const lastLessonData: LastLessonData = {
+      userId: auth.user ? auth.user?.userId : "",
       courseId: courseTree.courseId,
       courseSlug: courseSlug,
       courseName: courseTree.name,

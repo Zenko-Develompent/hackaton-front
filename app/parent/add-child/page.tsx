@@ -270,7 +270,7 @@ export default function AddChildPage() {
                       ) : (
                         <div className="flex items-center gap-1 mt-2 text-orange-600 text-sm">
                           <AlertCircle className="w-4 h-4" />
-                          <span>Роль: {searchResult.role}</span>
+                          <span>Роль: Родитель</span>
                         </div>
                       )}
                     </div>

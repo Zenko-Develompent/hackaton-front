@@ -15,6 +15,7 @@ import { LeaderboardWidget } from "@/widgets/community/LeaderboardWidget";
 const LAST_LESSON_STORAGE_KEY = "last_lesson";
 
 interface LastLessonData {
+  userId: string;
   courseId: string;
   courseSlug: string;
   courseName: string;
@@ -103,39 +104,53 @@ export default function Home() {
   };
 
   // Загрузка сохраненных уроков из localStorage
-  const loadLastLessons = () => {
-    try {
-      setLessonsLoading(true);
-      setLessonsError(false);
+const loadLastLessons = () => {
+  try {
+    setLessonsLoading(true);
+    setLessonsError(false);
 
-      const saved = localStorage.getItem(LAST_LESSON_STORAGE_KEY);
-      if (saved) {
-        let lessonsMap: Record<string, LastLessonData> = JSON.parse(saved);
-        
-        // Шаг 1: Очищаем дубликаты по курсам (оставляем только последний урок на курс)
-        lessonsMap = cleanupDuplicateLessons(lessonsMap);
-        
-        // Шаг 2: Дополнительная валидация по названиям уроков и модулей
-        lessonsMap = validateAndCleanLessons(lessonsMap);
-        
-        // Сохраняем очищенные данные обратно в localStorage
-        localStorage.setItem(LAST_LESSON_STORAGE_KEY, JSON.stringify(lessonsMap));
-        
-        // Преобразуем объект в массив и сортируем по времени (сначала новые)
-        const lessonsArray = Object.values(lessonsMap).sort(
-          (a, b) => b.timestamp - a.timestamp
+    const saved = localStorage.getItem(LAST_LESSON_STORAGE_KEY);
+    if (saved) {
+      let lessonsMap: Record<string, LastLessonData> = JSON.parse(saved);
+      
+      // Фильтруем уроки по текущему пользователю
+      const currentUserId = auth.user?.userId; // или из useAuth
+      if (currentUserId) {
+        // Оставляем только уроки текущего пользователя
+        lessonsMap = Object.fromEntries(
+          Object.entries(lessonsMap).filter(
+            ([_, lesson]) => lesson.userId === currentUserId
+          )
         );
-        setLastLessons(lessonsArray);
       } else {
-        setLastLessons([]);
+        // Если пользователь не авторизован, очищаем все
+        lessonsMap = {};
       }
-    } catch (err) {
-      console.error("Failed to load last lessons:", err);
-      setLessonsError(true);
-    } finally {
-      setLessonsLoading(false);
+      
+      // Шаг 1: Очищаем дубликаты по курсам (оставляем только последний урок на курс)
+      lessonsMap = cleanupDuplicateLessons(lessonsMap);
+      
+      // Шаг 2: Дополнительная валидация по названиям уроков и модулей
+      lessonsMap = validateAndCleanLessons(lessonsMap);
+      
+      // Сохраняем очищенные данные обратно в localStorage
+      localStorage.setItem(LAST_LESSON_STORAGE_KEY, JSON.stringify(lessonsMap));
+      
+      // Преобразуем объект в массив и сортируем по времени (сначала новые)
+      const lessonsArray = Object.values(lessonsMap).sort(
+        (a, b) => b.timestamp - a.timestamp
+      );
+      setLastLessons(lessonsArray);
+    } else {
+      setLastLessons([]);
     }
-  };
+  } catch (err) {
+    console.error("Failed to load last lessons:", err);
+    setLessonsError(true);
+  } finally {
+    setLessonsLoading(false);
+  }
+};
 
   // Загрузка курсов
   const fetchCourses = async () => {

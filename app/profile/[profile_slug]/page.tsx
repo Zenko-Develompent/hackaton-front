@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/features/auth/useAuth";
 import { Container } from "@/widgets/container/Container";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,10 @@ import {
   Users,
   Crown,
   ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
 import { authApi, userApi } from "@/entities/auth/api/auth.api";
 import { achievementApi } from "@/entities/achievement/api/achievement.api";
-import { socialApi } from "@/entities/social/api/social.api";
 import { parentApi } from "@/entities/parent/api/parent.api";
 import { ScreenLoader } from "@/widgets/ScreenLoader/ScreenLoader";
 import { useAlert } from "@/features/alert/alert-store";
@@ -32,7 +32,6 @@ import type {
   UserPublicProfile,
 } from "@/entities/auth/model/types";
 import type { Achievement } from "@/entities/achievement/model/types";
-import type { FriendStatus } from "@/entities/social/model/types";
 
 type ProfileViewType = "own" | "other" | "parent_child";
 
@@ -54,17 +53,19 @@ interface ChildDashboardData {
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuth, user: currentUser } = useAuth();
   const showAlert = useAlert();
 
   const profileSlug = params.profile_slug as string;
+  const childUserName = searchParams.get("child_user_name");
+  
   const isOwnProfile =
     profileSlug === "me" ||
     (currentUser && profileSlug === currentUser.username);
 
   const [profile, setProfile] = useState<UserProfile | UserPublicProfile | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [friendStatus, setFriendStatus] = useState<FriendStatus>(null);
   const [isParentView, setIsParentView] = useState(false);
   const [childDashboard, setChildDashboard] = useState<ChildDashboardData | null>(null);
   const [childrenList, setChildrenList] = useState<any[]>([]);
@@ -72,14 +73,7 @@ export default function ProfilePage() {
   const [loadingChildren, setLoadingChildren] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"achievements" | "stats" | "progress" | "children">("achievements");
-  const [isSendingRequest, setIsSendingRequest] = useState(false);
 
-  const viewType: ProfileViewType = isOwnProfile ? "own" : isParentView ? "parent_child" : "other";
-  const canEdit = viewType === "own";
-  const canChat = isAuth && viewType === "other" && currentUser?.role !== "parent";
-  const canAddFriend = isAuth && viewType === "other" && friendStatus === null && !isOwnProfile;
-  const isFriend = friendStatus === "ACCEPTED";
-  const hasPendingRequest = friendStatus === "OUTGOING_REQUEST";
   const isParent = currentUser?.role === "parent";
   const isCurrentUserStudent = currentUser?.role === "student";
 
@@ -109,9 +103,7 @@ export default function ProfilePage() {
     
     setLoading(true);
     try {
-
       const dashboard = await parentApi.getChildDashboard(childId);
-      
       setChildDashboard(dashboard);
       
       const childProfile: UserProfile = {
@@ -126,6 +118,11 @@ export default function ProfilePage() {
       setProfile(childProfile);
       setIsParentView(true);
       setActiveTab("progress");
+      
+      // Обновляем URL с параметром child_user_name
+      const url = new URL(window.location.href);
+      url.searchParams.set("child_user_name", dashboard.child.username);
+      router.replace(url.pathname + url.search);
     } catch (err) {
       console.error("Failed to load child dashboard:", err);
       showAlert({
@@ -139,7 +136,55 @@ export default function ProfilePage() {
     }
   };
 
-  const auth = useAuth();
+  // Загрузка профиля по username (для параметра child_user_name)
+  const loadChildByUsername = async (username: string) => {
+    if (!isParent) return;
+    
+    setLoading(true);
+    try {
+      // Сначала получаем публичный профиль, чтобы узнать userId
+      const userData = await userApi.getPublicProfileByUsername(username);
+      if (userData.role !== "student") {
+        throw new Error("Not a student");
+      }
+      
+      // Проверяем, есть ли этот ребёнок в списке детей
+      const children = await parentApi.getChildren();
+      const isChild = children.items.some(child => child.childUsername === username);
+      
+      if (!isChild) {
+        showAlert({
+          variant: "destructive",
+          title: "Доступ запрещён",
+          description: "У вас нет доступа к просмотру этого ребёнка",
+          autoClose: 3000,
+        });
+        router.push(`/profile/${currentUser?.username}`);
+        return;
+      }
+      
+      await loadChildDashboard(userData.userId);
+    } catch (err) {
+      console.error("Failed to load child by username:", err);
+      showAlert({
+        variant: "destructive",
+        title: "Ошибка",
+        description: "Не удалось загрузить профиль ребёнка",
+        autoClose: 3000,
+      });
+      router.push(`/profile/${currentUser?.username}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Возврат к своему профилю (для родителя)
+  const handleBackToOwnProfile = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("child_user_name");
+    router.push(`/profile/${currentUser?.username}`);
+  };
+
   // Загрузка профиля
   useEffect(() => {
     const fetchProfile = async () => {
@@ -148,6 +193,12 @@ export default function ProfilePage() {
       try {
         setLoading(true);
         setError(null);
+
+        // Если есть параметр child_user_name и пользователь родитель
+        if (childUserName && isParent && !isOwnProfile) {
+          await loadChildByUsername(childUserName);
+          return;
+        }
 
         if (isOwnProfile) {
           // Свой профиль
@@ -178,13 +229,11 @@ export default function ProfilePage() {
           );
 
           // Если текущий пользователь родитель и просматривает кого-то
-          if (isAuth && isParent && profileSlug === auth.user?.userId) {
+          if (isAuth && isParent && profileSlug !== currentUser?.username) {
             try {
               // Пытаемся загрузить дашборд (если просматриваемый пользователь - ребёнок)
-              
               await loadChildDashboard(profileSlug);
             } catch (err) {
-              // Если не ребёнок, то просто публичный профиль
               setIsParentView(false);
             }
           }
@@ -198,7 +247,7 @@ export default function ProfilePage() {
     };
 
     fetchProfile();
-  }, [profileSlug, isAuth, currentUser, isParent, isOwnProfile]);
+  }, [profileSlug, childUserName, isAuth, currentUser, isParent, isOwnProfile]);
 
   const handleShare = async () => {
     const url = `${window.location.origin}/profile/${profileSlug}`;
@@ -223,47 +272,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleEdit = () => {
-    router.push("/profile/edit");
-  };
 
-  const handleChat = async () => {
-    if (!profile?.username) return;
-    router.push(`/messages/new?user=${profileSlug}`);
-  };
-
-  const handleSendFriendRequest = async () => {
-    if (!profile?.username) return;
-
-    setIsSendingRequest(true);
-    try {
-      setFriendStatus("OUTGOING_REQUEST");
-      showAlert({
-        variant: "success",
-        title: "Заявка отправлена",
-        description: "Заявка в друзья успешно отправлена",
-        autoClose: 3000,
-      });
-    } catch (err) {
-      showAlert({
-        variant: "destructive",
-        title: "Ошибка",
-        description: "Не удалось отправить заявку",
-        autoClose: 3000,
-      });
-    } finally {
-      setIsSendingRequest(false);
-    }
-  };
-
-  const handleRemoveFriend = async () => {
-    showAlert({
-      variant: "default",
-      title: "В разработке",
-      description: "Функция удаления из друзей скоро появится",
-      autoClose: 2000,
-    });
-  };
 
   const earnedCount = achievements.filter((a) => a.unlocked).length;
   const totalAchievements = achievements.length;
@@ -293,6 +302,20 @@ export default function ProfilePage() {
   return (
     <Container>
       <div className="py-10">
+        {/* Кнопка возврата для родителя при просмотре ребёнка */}
+        {isParentViewingChild && (
+          <div className="mb-4">
+            <Button
+              variant="ghost"
+              onClick={handleBackToOwnProfile}
+              className="gap-2 text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Вернуться к моему профилю
+            </Button>
+          </div>
+        )}
+
         {/* Hero секция */}
         <div className="bg-linear-to-r from-primary/10 to-primary/5 rounded-[40px] p-8 mb-8">
           <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
@@ -337,12 +360,6 @@ export default function ProfilePage() {
 
             {/* Кнопки действий */}
             <div className="flex gap-2 flex-wrap">
-              {canChat && (
-                <Button variant="outline" size="lg" onClick={handleChat} className="gap-2 text-[16px]">
-                  <MessageCircle className="w-4 h-4" />
-                  Написать
-                </Button>
-              )}
 
               {/* Кнопка "Заявки родителей" - только для ученика в своём профиле */}
               {isCurrentUserStudent && isOwnProfile && (
@@ -357,43 +374,14 @@ export default function ProfilePage() {
                 </Button>
               )}
 
-              {canAddFriend && (
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={handleSendFriendRequest}
-                  disabled={isSendingRequest}
-                  className="gap-2 text-[16px]"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Добавить в друзья
-                </Button>
-              )}
-
-              {hasPendingRequest && (
-                <Button variant="outline" size="lg" disabled className="gap-2 text-[16px]">
-                  <Clock className="w-4 h-4" />
-                  Заявка отправлена
-                </Button>
-              )}
-
-              {isFriend && (
-                <Button variant="outline" size="lg" onClick={handleRemoveFriend} className="gap-2 text-[16px]">
-                  <Check className="w-4 h-4" />В друзьях
-                </Button>
-              )}
+              
 
               <Button variant="outline" size="lg" onClick={handleShare} className="gap-2 text-[16px]">
                 <Share2 className="w-4 h-4" />
                 Поделиться
               </Button>
 
-              {canEdit && (
-                <Button variant="default" size="lg" onClick={handleEdit} className="gap-2 text-[16px]">
-                  <Edit2 className="w-4 h-4" />
-                  Редактировать
-                </Button>
-              )}
+
             </div>
           </div>
         </div>
@@ -504,7 +492,6 @@ export default function ProfilePage() {
 
         {activeTab === "stats" && showStatsTab && (
           <div className="space-y-6">
-            
             <div className="bg-white rounded-2xl p-6 border">
               <h3 className="font-semibold text-lg mb-4">Активность</h3>
               <div className="grid grid-cols-3 gap-4">
@@ -544,7 +531,10 @@ export default function ProfilePage() {
                 <div
                   key={child.childUserId}
                   className="bg-white rounded-2xl p-4 border hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => loadChildDashboard(child.childUserId)}
+                  onClick={() => {
+                    // Добавляем параметр в URL и перезагружаем
+                    router.push(`/profile/${currentUser?.username}?child_user_name=${child.childUsername}`);
+                  }}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
