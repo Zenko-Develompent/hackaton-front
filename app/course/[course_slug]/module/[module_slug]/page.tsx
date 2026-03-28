@@ -38,8 +38,7 @@ export default function ModulePage() {
   const [recommendedError, setRecommendedError] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-
-  document.title="Доки Доки | Модуль " + moduleName;
+  document.title = "Доки Доки | Модуль " + moduleName;
 
   const { isAuth } = useAuth();
 
@@ -76,18 +75,18 @@ export default function ModulePage() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const data = await courseApi.getTree(courseSlug, isAuth);
         setCourseTree(data);
         setCourseName(data.name);
-        
+
         // Находим текущий модуль в дереве
-        const module = data.modules.find(m => m.moduleId === moduleSlug);
+        const module = data.modules.find((m) => m.moduleId === moduleSlug);
         if (module) {
           setModuleName(module.name);
           setExamId(module.examId);
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching course tree:", err);
@@ -103,7 +102,7 @@ export default function ModulePage() {
   useEffect(() => {
     const checkExamAccessibility = async () => {
       if (!moduleSlug || !examId || !isAuth) return;
-      
+
       try {
         const examInfo = await moduleApi.getExam(moduleSlug);
         console.log(examInfo);
@@ -124,10 +123,10 @@ export default function ModulePage() {
 
       try {
         setLessonsLoading(true);
-        
+
         const data = await moduleApi.getLessons(moduleSlug, isAuth);
         setLessons(data.items);
-        
+
         // Также получаем детальную информацию о модуле для описания
         try {
           const moduleData = await moduleApi.getModule(moduleSlug);
@@ -135,7 +134,7 @@ export default function ModulePage() {
         } catch (err) {
           console.error("Error fetching module details:", err);
         }
-        
+
         setLessonsLoading(false);
       } catch (err) {
         console.error("Error fetching lessons:", err);
@@ -151,10 +150,10 @@ export default function ModulePage() {
     try {
       setRecommendedLoading(true);
       setRecommendedError(false);
-      
+
       const response = await courseApi.getCourses(0, 4);
       const filteredCourses = response.items.filter(
-        (course) => course.courseId !== courseSlug
+        (course) => course.courseId !== courseSlug,
       );
       setRecommendedCourses(filteredCourses.slice(0, 4));
       setRecommendedLoading(false);
@@ -172,7 +171,7 @@ export default function ModulePage() {
   // Получаем первый доступный урок модуля
   const getFirstAvailableLessonUrl = () => {
     if (!lessons || lessons.length === 0) return null;
-    
+
     // Ищем первый доступный урок
     for (const lesson of lessons) {
       if (lesson.unlocked !== false) {
@@ -185,7 +184,7 @@ export default function ModulePage() {
   // Проверяем, есть ли доступные уроки
   const hasAvailableLessons = () => {
     if (!lessons) return false;
-    return lessons.some(lesson => lesson.unlocked !== false);
+    return lessons.some((lesson) => lesson.unlocked !== false);
   };
 
   // Обработчик кнопки "Начать модуль"
@@ -276,16 +275,24 @@ export default function ModulePage() {
     );
   }
 
-  const showExamWarning = examId && !examAccessible && isAuth && isModuleUnlocked;
+  const showExamWarning =
+    examId && !examAccessible && isAuth && isModuleUnlocked;
 
   return (
     <Container>
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
 
       {/* Hero секция */}
-      <div className={`flex flex-col items-start mt-5 gap-10 rounded-[40px] p-5 text-white text-[20px] ${
-        isModuleUnlocked ? "bg-primary" : "bg-gray-500"
-      }`}>
+      <div
+        style={{
+          backgroundImage: "url('/bg_dec.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+        className={`flex flex-col items-start mt-5 gap-10 rounded-[40px] p-5 text-white text-[20px] ${
+          isModuleUnlocked ? "bg-primary" : "bg-gray-500"
+        }`}
+      >
         <div>
           <span className="text-[24px] opacity-60">
             Модуль{" "}
@@ -305,19 +312,21 @@ export default function ModulePage() {
         <Button
           size="lg"
           className={`font-normal ${
-            isModuleUnlocked 
-              ? "bg-white text-primary" 
+            isModuleUnlocked
+              ? "bg-white text-primary"
               : "bg-gray-300 text-gray-600 cursor-not-allowed"
           }`}
           onClick={handleStartModule}
-          disabled={!isModuleUnlocked || lessons.length === 0 || !hasAvailableLessons()}
+          disabled={
+            !isModuleUnlocked || lessons.length === 0 || !hasAvailableLessons()
+          }
         >
-          {!isAuth 
-            ? "Войти для обучения" 
-            : !isModuleUnlocked 
-              ? "Модуль заблокирован" 
-              : !hasAvailableLessons() 
-                ? "Нет доступных уроков" 
+          {!isAuth
+            ? "Войти для обучения"
+            : !isModuleUnlocked
+              ? "Модуль заблокирован"
+              : !hasAvailableLessons()
+                ? "Нет доступных уроков"
                 : "Начать модуль"}
         </Button>
       </div>
@@ -337,8 +346,9 @@ export default function ModulePage() {
           <div className="border rounded-[40px] overflow-hidden">
             <div className="divide-y">
               {lessons.map((lesson, lessonIndex) => {
-                const isLessonUnlocked = lesson.unlocked !== false && isModuleUnlocked;
-                
+                const isLessonUnlocked =
+                  lesson.unlocked !== false && isModuleUnlocked;
+
                 return (
                   <div
                     key={lesson.lessonId}
@@ -354,12 +364,16 @@ export default function ModulePage() {
                         <span className="font-medium hover:text-blue-600 hover:underline transition-colors">
                           Урок {lessonIndex + 1}. {lesson.name}
                         </span>
-   
+
                         {lesson.quizId && (
-                          <span className="text-xs text-gray-400 ml-2">+ Тест</span>
+                          <span className="text-xs text-gray-400 ml-2">
+                            + Тест
+                          </span>
                         )}
                         {lesson.taskId && (
-                          <span className="text-xs text-gray-400 ml-2">+ Задание</span>
+                          <span className="text-xs text-gray-400 ml-2">
+                            + Задание
+                          </span>
                         )}
                       </Link>
                     ) : (
@@ -379,9 +393,11 @@ export default function ModulePage() {
 
               {/* Экзамен модуля */}
               {examId && (
-                <div className={`px-5 py-4 transition-colors border-t border-gray-100 ${
-                  isModuleUnlocked && examAccessible ? "hover:bg-gray-50" : ""
-                }`}>
+                <div
+                  className={`px-5 py-4 transition-colors border-t border-gray-100 ${
+                    isModuleUnlocked && examAccessible ? "hover:bg-gray-50" : ""
+                  }`}
+                >
                   {isAuth && isModuleUnlocked && examAccessible ? (
                     <Link
                       href={`/course/${courseSlug}/module/${moduleSlug}/exam`}
@@ -393,7 +409,9 @@ export default function ModulePage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-gray-700">
                         <span className="font-medium">Итоговый экзамен</span>
-                        {!isModuleUnlocked && <Lock className="w-4 h-4 text-gray-400" />}
+                        {!isModuleUnlocked && (
+                          <Lock className="w-4 h-4 text-gray-400" />
+                        )}
                         {showExamWarning && (
                           <AlertCircle className="w-4 h-4 text-yellow-500" />
                         )}
@@ -409,7 +427,7 @@ export default function ModulePage() {
               )}
             </div>
           </div>
-          
+
           {/* Навигация между модулями */}
           <div className="flex justify-between gap-4">
             <Button

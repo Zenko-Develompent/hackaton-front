@@ -14,10 +14,9 @@ import {
 } from "@/shared/ui";
 import { lessonApi } from "@/entities/lesson/api/lesson.api";
 import { quizApi } from "@/entities/quiz/api/quiz.api";
-import { questApi } from "@/entities/quest/api/quest.api";
 import { courseApi } from "@/entities/course/api/course.api";
 import { moduleApi } from "@/entities/module/api/module.api";
-import type { QuizStartResponse, QuizAnswerResponse, QuizCompleteResponse } from "@/entities/quiz/model/types";
+import type { QuizStartResponse } from "@/entities/quiz/model/types";
 import type { LessonQuiz } from "@/entities/lesson/model/types";
 
 export default function QuizPage() {
@@ -43,8 +42,6 @@ export default function QuizPage() {
     correctAnswers: number;
   } | null>(null);
   
-  document.title = "Доки Доки | Тест " + quiz?.name;
-
   // Названия для хлебных крошек
   const [courseName, setCourseName] = useState<string>("");
   const [moduleName, setModuleName] = useState<string>("");
@@ -61,11 +58,9 @@ export default function QuizPage() {
         setLoading(true);
         setError(null);
         
-        // Загружаем информацию о квизе
         const quizData = await lessonApi.getQuiz(lessonSlug);
         setQuiz(quizData);
         
-        // Загружаем названия для хлебных крошек
         try {
           const courseTree = await courseApi.getTree(courseSlug, isAuth);
           setCourseName(courseTree.name);
@@ -100,7 +95,6 @@ export default function QuizPage() {
 
     try {
       setLoading(true);
-      
       const response = await quizApi.start(quiz.quizId);
       setQuizSession(response);
       setLoading(false);
@@ -124,7 +118,6 @@ export default function QuizPage() {
       });
       
       if (response.completed) {
-        // Квиз завершен
         setResult({
           completed: true,
           firstCompletion: true,
@@ -136,7 +129,6 @@ export default function QuizPage() {
         setCompleted(true);
         setQuizSession(null);
       } else {
-        // Обновляем сессию с новым вопросом
         setQuizSession({
           completed: false,
           question: response.question,
@@ -168,10 +160,10 @@ export default function QuizPage() {
   if (loading) {
     return (
       <Container>
-        <div className="flex items-center justify-center py-40">
+        <div className="w-full">
           <div className="animate-pulse text-center">
-            <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
-            <div className="h-32 bg-gray-200 rounded w-96"></div>
+            <div className="h-8 bg-gray-200 rounded-[40px] w-1/3 mb-4"></div>
+            <div className="h-100 bg-gray-200 rounded-[40px] w-full"></div>
           </div>
         </div>
       </Container>
@@ -183,7 +175,7 @@ export default function QuizPage() {
       <Container>
         <div className="flex flex-col items-center justify-center py-40">
           <p className="text-red-500 mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
+          <Button size="lg" className="text-base" onClick={() => window.location.reload()}>
             Попробовать снова
           </Button>
         </div>
@@ -223,11 +215,6 @@ export default function QuizPage() {
             { 
               label: "Вернуться к уроку", 
               onClick: () => router.push(`/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`),
-              variant: "outline"
-            },
-            { 
-              label: "К модулю", 
-              onClick: () => router.push(`/course/${courseSlug}/module/${moduleSlug}`),
               variant: "primary"
             },
           ]}
@@ -241,8 +228,8 @@ export default function QuizPage() {
       <Container>
         <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
         
-        <div className="max-w-2xl mx-auto py-10">
-          <div className="bg-white rounded-[40px] p-8 shadow-lg">
+        <div className="py-10">
+          <div className="">
             <h1 className="text-3xl font-bold mb-4">{quiz.name}</h1>
             <p className="text-gray-600 mb-6">{quiz.description}</p>
             
@@ -266,12 +253,13 @@ export default function QuizPage() {
             <div className="flex gap-4">
               <Button 
                 variant="outline" 
+                size="lg"
                 onClick={() => router.push(`/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}`)} 
-                className="flex-1"
+                className="flex-1 text-base"
               >
                 Вернуться к уроку
               </Button>
-              <Button onClick={startQuiz} className="flex-1">
+              <Button onClick={startQuiz} className="flex-1 text-base" size="lg">
                 Начать тест
               </Button>
             </div>
@@ -301,7 +289,7 @@ export default function QuizPage() {
     <Container>
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
       
-      <div className="max-w-3xl mx-auto py-10">
+      <div className="py-10">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <span className="text-sm text-gray-500">

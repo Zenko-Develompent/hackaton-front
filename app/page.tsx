@@ -217,7 +217,7 @@ export default function Home() {
       </div>
 
       {/* Блок "Продолжить обучение" - показываем только если есть сохраненные уроки */}
-      {hasLastLessons && (
+      {(hasLastLessons && auth.isAuth) && (
         <div className="flex flex-col gap-20 mb-20">
           <CoursesWrapper
             title="Продолжите, где остановились"
@@ -226,7 +226,7 @@ export default function Home() {
             onRetry={handleRetryLessons}
             emptyMessage="Нет сохраненных уроков"
             errorMessage="Не удалось загрузить сохраненные уроки"
-            initialLimit={3}
+            initialLimit={2}
           >
             {lastLessons.map((lesson) => (
               <LessonCard

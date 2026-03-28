@@ -225,7 +225,7 @@ export const LeaderboardWidget = ({
           >
             {item.score}
           </div>
-          <div className="text-xs text-gray-400">место {item.rank}</div>
+          <div className="text-xs text-gray-400">{metric === "activity" ? "баллов" : "XP"}</div>
         </div>
       </div>
     </div>

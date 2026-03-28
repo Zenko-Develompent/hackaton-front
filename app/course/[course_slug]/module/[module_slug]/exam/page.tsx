@@ -464,14 +464,14 @@ export default function ExamPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Награда:</span>
-                <span className="font-semibold text-green-600">
+                <span className="font-medium text-green-600">
                   {examDetails?.xpReward || 0} XP +{" "}
                   {examDetails?.coinReward || 0} монет
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Условие:</span>
-                <span className="font-semibold text-orange-600">
+                <span className="font-medium text-orange-600">
                   Все вопросы должны быть отвечены правильно
                 </span>
               </div>
@@ -479,15 +479,16 @@ export default function ExamPage() {
 
             <div className="flex gap-4">
               <Button
+              size="lg"
                 variant="outline"
                 onClick={() =>
                   router.push(`/course/${courseSlug}/module/${moduleSlug}`)
                 }
-                className="flex-1"
+                className="flex-1 text-base"
               >
                 Вернуться к модулю
               </Button>
-              <Button onClick={() => setExamStarted(true)} className="flex-1">
+              <Button size="lg" onClick={() => setExamStarted(true)} className="flex-1 text-base">
                 Начать экзамен
               </Button>
             </div>

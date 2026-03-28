@@ -12,6 +12,7 @@ export type User = {
 };
 
 export type UserProfile = {
+  userId: string;
   role: 'student' | 'parent';
   username: string;
   xp: number;
@@ -21,10 +22,12 @@ export type UserProfile = {
 };
 
 export type UserPublicProfile = {
+  userId?: string;
   username: string;
   level: number;
   exp: number;
   achievements: UserAchievement[];
+  role: 'student' | 'parent';
 };
 
 export type UserAchievement = {
@@ -56,6 +59,7 @@ export type RegisterRequest = {
 };
 
 export type RegisterResponse = AuthTokens & {
+  
   user: User;
 };
 

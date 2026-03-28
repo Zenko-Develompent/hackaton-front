@@ -18,7 +18,7 @@ import rehypeRaw from "rehype-raw";
 import "highlight.js/styles/github-dark.css";
 import hljs from "highlight.js";
 import CoinIconWhite from "@/shared/assets/icons/CoinVerticalWhite.svg";
-import { Lock } from "lucide-react";
+import { Lock, CheckCircle, Circle } from "lucide-react";
 import type { CourseTree, Course } from "@/entities/course/model/types";
 import type { Lesson } from "@/entities/lesson/model/types";
 import type { LessonShort } from "@/entities/module/model/types";
@@ -56,6 +56,11 @@ export default function LessonPage() {
   const [recommendedLoading, setRecommendedLoading] = useState(true);
   const [recommendedError, setRecommendedError] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Состояния для проверки пройденности
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [taskCompleted, setTaskCompleted] = useState(false);
+  const [lessonProgress, setLessonProgress] = useState<any>(null);
   
   const { isAuth } = useAuth();
 
@@ -98,7 +103,6 @@ export default function LessonPage() {
     };
     
     try {
-      // Получаем существующие данные
       const existingData = localStorage.getItem(LAST_LESSON_STORAGE_KEY);
       let lessonsMap: Record<string, LastLessonData> = {};
       
@@ -106,13 +110,8 @@ export default function LessonPage() {
         lessonsMap = JSON.parse(existingData);
       }
       
-      // Сохраняем только один урок на курс (по courseId)
       lessonsMap[courseTree.courseId] = lastLessonData;
-      
-      // Сохраняем обратно в localStorage
       localStorage.setItem(LAST_LESSON_STORAGE_KEY, JSON.stringify(lessonsMap));
-      
-      console.log("[LessonPage] Saved last lesson:", lastLessonData);
     } catch (err) {
       console.error("[LessonPage] Failed to save last lesson:", err);
     }
@@ -156,7 +155,7 @@ export default function LessonPage() {
     fetchModuleLessons();
   }, [moduleSlug, isAuth]);
 
-  // Загрузка урока
+  // Загрузка урока и проверка пройденности
   useEffect(() => {
     const fetchLesson = async () => {
       if (!lessonSlug) return;
@@ -165,7 +164,23 @@ export default function LessonPage() {
         setLessonLoading(true);
 
         const data = await lessonApi.getLesson(lessonSlug);
+        console.log(data)
         setLesson(data);
+        
+        // Загружаем прогресс урока
+        try {
+          const progress = await lessonApi.getProgress(lessonSlug);
+          setLessonProgress(progress);
+          setQuizCompleted(progress.completed || progress.percent >= 50);
+          
+          // Если есть задание, проверяем его выполнение
+          if (data.taskId) {
+            setTaskCompleted(progress.completed || progress.percent >= 100);
+          }
+        } catch (err) {
+          console.error("Error fetching lesson progress:", err);
+        }
+        
         setLessonLoading(false);
       } catch (err) {
         console.error("Error fetching lesson:", err);
@@ -178,10 +193,10 @@ export default function LessonPage() {
 
   // Сохраняем последний урок после успешной загрузки всех данных
   useEffect(() => {
-    if (!isLoading && !lessonLoading && courseTree && lesson && currentModule) {
+    if (!loading && !lessonLoading && courseTree && lesson && currentModule) {
       saveLastLesson();
     }
-  }, [loading, lessonLoading, lessonLoading, courseTree, lesson, currentModule, courseSlug, moduleSlug, lessonSlug]);
+  }, [loading, lessonLoading, courseTree, lesson, currentModule]);
 
   // Загрузка рекомендуемых курсов
   const fetchRecommendedCourses = async () => {
@@ -290,7 +305,7 @@ export default function LessonPage() {
   };
 
   const handleStartQuiz = () => {
-    if (lesson?.quizId && isLessonUnlocked) {
+    if (lesson?.quizId && isLessonUnlocked && !quizCompleted) {
       router.push(
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}/quiz`,
       );
@@ -298,24 +313,11 @@ export default function LessonPage() {
   };
 
   const handleStartTask = () => {
-    if (lesson?.taskId && isLessonUnlocked) {
+    if (lesson?.taskId && isLessonUnlocked && !taskCompleted && quizCompleted) {
       router.push(
         `/course/${courseSlug}/module/${moduleSlug}/lesson/${lessonSlug}/task`,
       );
     }
-  };
-
-  // Обработчики для карточек курсов
-  const handleStartCourse = (courseId: string) => {
-    if (!isAuth) {
-      router.push("/login");
-      return;
-    }
-    router.push(`/course/${courseId}`);
-  };
-
-  const handleDetails = (courseId: string) => {
-    router.push(`/course/${courseId}`);
   };
 
   const handleRetryRecommended = () => {
@@ -437,7 +439,11 @@ export default function LessonPage() {
       <BreadcrumbNavigation showHome={true} items={breadcrumbItems} />
 
       {/* Hero секция */}
-      <div className="relative flex flex-col items-start mt-5 gap-6 rounded-[40px] p-5 bg-[#35BCFF] text-white">
+      <div style={{
+          backgroundImage: "url('/bg_dec.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}  className="relative flex flex-col items-start mt-5 gap-6 rounded-[40px] p-5 bg-[#35BCFF] text-white">
         <div>
           <span className="text-[20px] opacity-60">
             Урок{" "}
@@ -450,25 +456,56 @@ export default function LessonPage() {
         <div className="flex flex-col gap-2">
           <p className="text-white/80 text-[18px]">{lesson.description}</p>
         </div>
+        
+        {/* Статус прохождения теста и задания */}
+        <div className="flex gap-4 text-sm">
+          {lesson.quizId && (
+            <div className={`flex items-center gap-1 ${quizCompleted ? 'text-green-300' : 'text-white/60'}`}>
+              {quizCompleted ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <Circle className="w-4 h-4" />
+              )}
+              <span>Тест {quizCompleted ? 'пройден' : 'не пройден'}</span>
+            </div>
+          )}
+          {lesson.taskId && (
+            <div className={`flex items-center gap-1 ${taskCompleted ? 'text-green-300' : 'text-white/60'}`}>
+              {taskCompleted ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <Circle className="w-4 h-4" />
+              )}
+              <span>Задание {taskCompleted ? 'выполнено' : 'не выполнено'}</span>
+            </div>
+          )}
+        </div>
+        
         <div className="flex gap-3">
           {lesson.quizId && (
             <Button
               size="lg"
               variant="outline"
-              className="bg-0 text-white font-normal "
+              className={`bg-0 text-white font-normal ${quizCompleted ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`}
               onClick={handleStartQuiz}
+              disabled={quizCompleted}
             >
-              Пройти тест
+              {quizCompleted ? "Тест пройден ✓" : "Пройти тест"}
             </Button>
           )}
           {lesson.taskId && (
             <Button
               size="lg"
               variant="outline"
-              className="bg-0 text-white font-normal "
+              className={`bg-0 text-white font-normal ${taskCompleted || !quizCompleted ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/20'}`}
               onClick={handleStartTask}
+              disabled={taskCompleted || Boolean(lesson.quizId && !quizCompleted)}
             >
-              Выполнить задание
+              {taskCompleted 
+                ? "Задание выполнено ✓" 
+                : (lesson.quizId && !quizCompleted) 
+                  ? "Сначала пройдите тест" 
+                  : "Выполнить задание"}
             </Button>
           )}
         </div>
@@ -478,7 +515,7 @@ export default function LessonPage() {
         </span>
       </div>
 
-       {/* Контент урока в формате Markdown */}
+      {/* Контент урока в формате Markdown */}
       <div className="mt-10 mb-20">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -599,8 +636,8 @@ export default function LessonPage() {
           <CourseCard
             key={course.courseId}
             course={course}
-            onStartLearning={handleStartCourse}
-            onDetails={handleDetails}
+            onStartLearning={() => router.push(`/course/${course.courseId}`)}
+            onDetails={() => router.push(`/course/${course.courseId}`)}
           />
         ))}
       </CoursesWrapper>

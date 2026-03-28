@@ -23,7 +23,7 @@ export const ResultDisplay = ({
   actions = [],
 }: ResultDisplayProps) => {
   return (
-    <div className="bg-white rounded-[40px] p-8 shadow-lg text-center">
+    <div className=" p-20  text-center">
       <div className="mb-6">
         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +54,8 @@ export const ResultDisplay = ({
               key={index}
               variant={action.variant === 'outline' ? 'outline' : 'default'}
               onClick={action.onClick}
-              className="flex-1"
+              className="flex-1 text-base"
+              size="lg"
             >
               {action.label}
             </Button>

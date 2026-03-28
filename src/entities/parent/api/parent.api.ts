@@ -16,7 +16,6 @@ export const parentApi = {
 
   getOutgoingRequests: (limit?: number) =>
     api().get<ParentControlRequestsResponse>('/parent/requests/outgoing', {
-      params: { limit },
       auth: true,
     }),
 

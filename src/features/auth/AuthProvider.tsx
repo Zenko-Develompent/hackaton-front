@@ -56,11 +56,9 @@ export const AuthProvider = ({
   }) => {
     console.log('[AuthProvider] Logging in...');
     
-    // Сохраняем токены
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
     
-    // Проверяем, что токен сохранился
     const savedToken = localStorage.getItem('access_token');
     console.log('[AuthProvider] Token saved:', !!savedToken);
     
@@ -68,7 +66,6 @@ export const AuthProvider = ({
       throw new Error('Failed to save token');
     }
     
-    // Небольшая задержка для синхронизации
     await new Promise(resolve => setTimeout(resolve, 100));
     
     try {
@@ -90,7 +87,6 @@ export const AuthProvider = ({
     }
   }, [fetchUser]);
 
-  // Новая функция регистрации
   const register = useCallback(async ({
     username,
     password,
@@ -105,34 +101,39 @@ export const AuthProvider = ({
     console.log('[AuthProvider] Registering...');
     
     try {
-      // Выполняем регистрацию
+      const ageNumber = parseInt(age, 10);
+      if (isNaN(ageNumber)) {
+        throw new Error('Invalid age');
+      }
+      
       const response = await authApi.register({
         username,
         password,
-        age,
+        age: ageNumber,
         role,
       });
       
       console.log('[AuthProvider] Registration successful, saving tokens...');
       
-      // Сохраняем токены
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
       
-      // Сохраняем полную информацию о пользователе
       if (isMountedRef.current) {
         setFullUser(response.user);
         
-        // Загружаем профиль пользователя
         try {
           const userProfile = await authApi.getProfile();
           setUser(userProfile);
         } catch (profileError) {
           console.error('[AuthProvider] Failed to fetch profile after registration:', profileError);
-          // Если не удалось загрузить профиль, создаем базовый из данных регистрации
+          // Создаем базовый профиль с правильной структурой UserProfile
           setUser({
+            userId: response.user.id,
             username: response.user.username,
+            role: response.user.role,
+            xp: response.user.xp || 0,
             level: response.user.level || 0,
+            coins: response.user.coins || 0,
             achievements: [],
           });
         }
@@ -158,7 +159,8 @@ export const AuthProvider = ({
     try {
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
-        await authApi.logout(refreshToken);
+        // Передаем объект { refreshToken } как требуется типом LogoutRequest
+        await authApi.logout({ refreshToken });
       }
     } catch (error) {
       console.error('[AuthProvider] Logout API call failed:', error);

@@ -66,12 +66,12 @@ export const TaskRunner = ({
       />
       
       <div className="flex justify-between items-center">
+        {result && <CodeOutput {...result} />}
         <TaskStatus 
           status={completed ? 'completed' : running ? 'running' : 'pending'}
           onRun={handleRun}
           disabled={running || !code.trim()}
         />
-        {result && <CodeOutput {...result} />}
       </div>
     </div>
   );

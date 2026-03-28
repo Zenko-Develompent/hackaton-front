@@ -58,7 +58,7 @@ export const LessonCard = ({
     : null;
 
   return (
-    <div className="flex flex-col gap-8 p-5 w-full transition-colors bg-primary/4 hover:bg-primary/8 rounded-[40px] cursor-pointer border border-[#6737FF]/0 hover:border-[#6737FF]/80">
+    <div className="flex flex-col gap-8 p-5 w-full transition-colors bg-[#35bcff]/4 hover:bg-[#35bcff]/8 rounded-[40px] cursor-pointer border border-[#35bcff]/0 hover:border-[#35bcff]/80">
       <div className="flex justify-between gap-4">
         <div className="flex-1">
           {/* Заголовок курса */}
@@ -102,7 +102,7 @@ export const LessonCard = ({
       {/* Кнопка продолжения */}
       <Button
         size="lg"
-        className="w-full text-[16px] bg-[#6737FF] hover:bg-[#6737FF]/90 gap-2"
+        className="w-full text-[16px] bg-[#35bcff] hover:bg-[#35bcff]/90 gap-2"
         onClick={handleContinue}
       >
         Продолжить обучение

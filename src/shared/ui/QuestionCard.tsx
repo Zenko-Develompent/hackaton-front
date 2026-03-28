@@ -66,7 +66,7 @@ export const QuestionCard = ({
           <Button
             onClick={onSubmit}
             disabled={!selectedAnswer || isSubmitting}
-            className="w-full"
+            className="w-full text-base"
             size="lg"
           >
             {isSubmitting ? "Отправка..." : "Ответить"}
